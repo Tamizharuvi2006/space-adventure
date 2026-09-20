@@ -6,7 +6,7 @@ const SolarBackground = preload("res://scripts/background.gd")
 
 const SAVE_PATH = "user://explore_sun_best.save"
 
-enum GameState { MAIN_MENU, COUNTDOWN, PLAYING, PAUSED, GAME_OVER }
+enum GameState { MAIN_MENU, COUNTDOWN, PLAYING, PAUSED, GAME_OVER, REWINDING }
 
 @onready var world_gen: WorldGenerator = $WorldGenerator
 @onready var player: SolarPlayer = $Player
@@ -17,9 +17,11 @@ enum GameState { MAIN_MENU, COUNTDOWN, PLAYING, PAUSED, GAME_OVER }
 
 var current_state: GameState = GameState.MAIN_MENU
 var current_pad: int = 0
+var current_checkpoint: int = 0
 var best_pad: int = 0
 var consecutive_perfects: int = 0
 var current_zone_idx: int = 0
+var rewind_tween: Tween = null
 
 func _ready() -> void:
 	load_best_score()
@@ -46,15 +48,20 @@ func _process(_delta: float) -> void:
 		background.update_camera_offset(camera.global_position)
 	# Drive terrain streaming each frame — gives the "travelling world" feel.
 	# Pass the camera's current world-space X so chunks spawn ahead and recycle behind.
-	if current_state == GameState.PLAYING or current_state == GameState.COUNTDOWN:
+	if current_state == GameState.PLAYING or current_state == GameState.COUNTDOWN or current_state == GameState.REWINDING:
 		world_gen.update_terrain_streaming(camera.global_position.x)
 
 func go_to_main_menu() -> void:
 	current_state = GameState.MAIN_MENU
 	get_tree().paused = false
 	player.set_control_enabled(false)
+	if rewind_tween and rewind_tween.is_valid():
+		rewind_tween.kill()
+	if camera:
+		camera.set_process(true)
 	
 	current_pad = 0
+	current_checkpoint = 0
 	consecutive_perfects = 0
 	current_zone_idx = 0
 	
@@ -112,23 +119,39 @@ func _on_retry_game_requested() -> void:
 	hud.hide_pause_menu()
 	hud.hide_game_over()
 	
-	# Cleanly reset run
-	current_pad = 0
+	# Resume from last successfully landed checkpoint
+	current_pad = current_checkpoint
 	consecutive_perfects = 0
-	current_zone_idx = 0
-	hud.update_progress(0, SunZoneData.TOTAL_PADS, best_pad)
 	
-	# Reset environment to Solar Valley baseline
-	var zone0 = SunZoneData.get_zone_by_index(0)
+	# Zone environment matching current checkpoint
+	current_zone_idx = SunZoneData.get_zone_index(current_checkpoint)
+	var current_zone = SunZoneData.get_zone_by_index(current_zone_idx)
 	if background and background.has_method("apply_zone_visuals_instant"):
-		background.apply_zone_visuals_instant(zone0)
+		background.apply_zone_visuals_instant(current_zone)
 	
-	var start_pad = world_gen.initialize_world(player)
-	player.spawn_on_platform(start_pad)
-	_update_target_platform(1)
+	var checkpoint_pad = world_gen.ensure_checkpoint_exists(current_checkpoint)
+	if checkpoint_pad:
+		player.spawn_on_platform(checkpoint_pad)
+		
+		# Set target to next platform
+		var next_target_idx = current_checkpoint + 1
+		var next_pad = world_gen.ensure_checkpoint_exists(next_target_idx)
+		_update_target_platform(next_target_idx)
+		world_gen.set_active_targets(checkpoint_pad, next_pad)
+		
+		# Update camera composition for checkpoint pad
+		camera.notify_landed(checkpoint_pad)
+		var view_w = get_viewport().get_visible_rect().size.x
+		var target_cam_x = checkpoint_pad.global_position.x - (view_w * (camera.current_screen_frac_x - 0.5))
+		camera.global_position.x = target_cam_x
+		camera.global_position.y = checkpoint_pad.global_position.y + camera.default_vertical_offset
+		
+	hud.update_progress(current_checkpoint, SunZoneData.TOTAL_PADS, best_pad)
+	var zone = SunZoneData.get_zone_for_pad(current_checkpoint)
+	hud.update_zone_name(zone["name"])
 	
 	_start_countdown_and_play()
-	print("[GAME_STATE] Retrying game - fresh run started")
+	print("[GAME_STATE] Retried from checkpoint PAD %d -> targeting PAD %d" % [current_checkpoint, current_checkpoint + 1])
 
 func _on_home_game_requested() -> void:
 	go_to_main_menu()
@@ -153,6 +176,7 @@ func _on_player_landed(platform: Node2D, is_perfect: bool) -> void:
 	var solar_platform = platform as SolarPlatform
 	if solar_platform and not solar_platform.has_been_visited:
 		current_pad = solar_platform.platform_index
+		current_checkpoint = current_pad
 		
 		if is_perfect:
 			consecutive_perfects += 1
@@ -203,13 +227,92 @@ func _on_player_crashed(reason: String) -> void:
 	if current_state != GameState.PLAYING:
 		return
 		
-	current_state = GameState.GAME_OVER
+	current_state = GameState.REWINDING
 	player.set_control_enabled(false)
-	camera.add_trauma(0.85)
+	camera.add_trauma(0.55)
+	print("[DEATH] Player crashed (%s). Emphasizing death impact in slow-motion..." % reason)
 	
-	var is_new = current_pad >= best_pad and current_pad > 0
-	hud.show_game_over(current_pad, best_pad, is_new, reason)
-	print("[GAME_STATE] Transitioned to GAME_OVER (Pad: %d, Reason: %s)" % [current_pad, reason])
+	# 1. Very short slow-motion effect (25% speed for ~0.25s real time)
+	Engine.time_scale = 0.25
+	await get_tree().create_timer(0.25, true, false, true).timeout
+	Engine.time_scale = 1.0
+	
+	if current_state != GameState.REWINDING:
+		return
+		
+	_perform_checkpoint_rewind()
+
+func _perform_checkpoint_rewind() -> void:
+	if rewind_tween and rewind_tween.is_valid():
+		rewind_tween.kill()
+
+	if current_state != GameState.REWINDING:
+		return
+
+	# Ensure checkpoint pad exists in active world
+	var checkpoint_pad = world_gen.ensure_checkpoint_exists(current_checkpoint)
+	if not checkpoint_pad:
+		checkpoint_pad = world_gen.ensure_checkpoint_exists(0)
+		current_checkpoint = 0
+
+	# 2. Capture death coordinates and calculate destination checkpoint coordinates
+	var death_cam_pos = camera.global_position
+	var death_player_pos = player.global_position
+	var target_player_pos = checkpoint_pad.get_landing_position()
+
+	var view_w = get_viewport().get_visible_rect().size.x
+	var target_cam_x = checkpoint_pad.global_position.x - (view_w * (camera.current_screen_frac_x - 0.5))
+	var target_cam_y = checkpoint_pad.global_position.y + camera.default_vertical_offset
+	var target_cam_pos = Vector2(target_cam_x, target_cam_y)
+
+	# 3. Disable autonomous camera follow during rewind
+	camera.set_process(false)
+
+	# 4. Calculate distance-scaled rewind duration (0.8s to 1.4s max)
+	var dist = absf(death_cam_pos.x - target_cam_x)
+	var rewind_duration = clampf(0.80 + (dist / 1800.0) * 0.45, 0.80, 1.40)
+
+	# 5. Restore player sprite with glowing rewind tint so player visually travels backward
+	player.sprite_node.visible = true
+	player.crash_particles.emitting = false
+	player.modulate = Color(0.65, 0.95, 1.0, 0.92)
+	player.velocity = Vector2.ZERO
+
+	# 6. Continuous reverse travel: smoothly interpolate both camera and player back to checkpoint
+	rewind_tween = create_tween().set_parallel(true)
+	rewind_tween.tween_property(camera, "global_position", target_cam_pos, rewind_duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	rewind_tween.tween_property(player, "global_position", target_player_pos, rewind_duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	rewind_tween.tween_property(player, "rotation", 0.0, rewind_duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+
+	# 7. When rewind reaches checkpoint, settle cleanly onto pad and resume continuous play
+	rewind_tween.chain().tween_callback(func():
+		player.modulate = Color.WHITE
+		player.spawn_on_platform(checkpoint_pad)
+		camera.set_process(true)
+		camera.notify_landed(checkpoint_pad)
+		
+		# Set target to next platform
+		var next_target_idx = current_checkpoint + 1
+		var next_pad = world_gen.ensure_checkpoint_exists(next_target_idx)
+		_update_target_platform(next_target_idx)
+		world_gen.set_active_targets(checkpoint_pad, next_pad)
+
+		# Ensure zone visuals match current checkpoint
+		current_zone_idx = SunZoneData.get_zone_index(current_checkpoint)
+		var current_zone = SunZoneData.get_zone_by_index(current_zone_idx)
+		if background and background.has_method("apply_zone_visuals_instant"):
+			background.apply_zone_visuals_instant(current_zone)
+
+		# Update HUD progress & zone
+		hud.update_progress(current_checkpoint, SunZoneData.TOTAL_PADS, best_pad)
+		var zone = SunZoneData.get_zone_for_pad(current_checkpoint)
+		hud.update_zone_name(zone["name"])
+
+		# Re-enable controls immediately - continue gameplay!
+		player.set_control_enabled(true)
+		current_state = GameState.PLAYING
+		print("[REWIND] Settled on PAD %d. Continuous play resumed -> target PAD %d" % [current_checkpoint, next_target_idx])
+	)
 
 func load_best_score() -> void:
 	if FileAccess.file_exists(SAVE_PATH):

@@ -469,13 +469,16 @@ func hide_game_over() -> void:
 	game_over_menu.visible = false
 	gameplay_hud.visible = true
 
+var progress_tween: Tween = null
+
 func update_progress(current_pad_count: int, total_pads: int, best_pad_count: int) -> void:
 	if altitude_label:
 		altitude_label.text = "%d / %d" % [current_pad_count, total_pads]
-		# Scale-in animation on progress change
+		if progress_tween and progress_tween.is_valid():
+			progress_tween.kill()
 		altitude_label.scale = Vector2(1.12, 1.12)
-		var t = create_tween()
-		t.tween_property(altitude_label, "scale", Vector2.ONE, 0.15)
+		progress_tween = create_tween()
+		progress_tween.tween_property(altitude_label, "scale", Vector2.ONE, 0.15)
 	if best_label:
 		best_label.text = "PAD %d" % best_pad_count
 
@@ -531,17 +534,24 @@ func show_journey_complete(current_pad_count: int, total_pads: int) -> void:
 	banner_tween.chain().tween_interval(4.0)
 	banner_tween.chain().tween_property(planet_arrival_card, "modulate:a", 0.0, 0.6)
 
+var alert_tween: Tween = null
+
 func show_landing_alert(text: String, is_perfect: bool) -> void:
+	if not alert_container:
+		return
 	if alert_label:
 		alert_label.text = text
 		alert_label.modulate = Color(0.2, 1.0, 0.8) if is_perfect else Color(0.3, 0.9, 1.0)
 		
+	if alert_tween and alert_tween.is_valid():
+		alert_tween.kill()
+		
 	alert_container.modulate.a = 1.0
 	alert_container.scale = Vector2(1.15, 1.15)
 	
-	var tween = create_tween()
-	tween.tween_property(alert_container, "scale", Vector2.ONE, 0.12)
-	tween.tween_property(alert_container, "modulate:a", 0.0, 0.5).set_delay(0.5)
+	alert_tween = create_tween()
+	alert_tween.tween_property(alert_container, "scale", Vector2.ONE, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	alert_tween.tween_property(alert_container, "modulate:a", 0.0, 0.35).set_delay(0.40)
 
 func _on_fuel_changed(current: float, max_val: float) -> void:
 	current_fuel_ratio = current / max_val if max_val > 0.0 else 0.0

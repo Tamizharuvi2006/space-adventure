@@ -302,14 +302,14 @@ func on_platform_reached(landed_pad: SolarPlatform) -> void:
 	current_platform = landed_pad
 	var landed_idx = landed_pad.platform_index
 
+	# Stream new route pads ahead immediately so next_platform is guaranteed
+	_stream_ahead(landed_idx)
+
 	# Determine next route pad
 	next_platform = get_platform_by_index(landed_idx + 1)
 
 	# Update visuals
 	update_route_visuals(landed_idx)
-
-	# Stream new route pads ahead
-	call_deferred("_stream_ahead", landed_idx)
 
 func _stream_ahead(curr_idx: int) -> void:
 	while next_platform_idx < curr_idx + buffer_pads_ahead:
@@ -352,3 +352,11 @@ func get_platform_by_index(idx: int) -> SolarPlatform:
 
 func get_highest_platform_index() -> int:
 	return next_platform_idx
+
+func ensure_checkpoint_exists(idx: int) -> SolarPlatform:
+	var existing = get_platform_by_index(idx)
+	if existing:
+		return existing
+	while next_platform_idx < idx + buffer_pads_ahead:
+		spawn_next_route_pad()
+	return get_platform_by_index(idx)

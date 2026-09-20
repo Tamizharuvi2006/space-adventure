@@ -338,9 +338,127 @@ func trigger_death(reason: String) -> void:
 		sound_manager.play_crash()
 		
 	sprite_node.visible = false
-	crash_particles.restart()
-	crash_particles.emitting = true
+	_spawn_death_burst()
 	emit_signal("crashed", reason)
+
+func _spawn_death_burst() -> void:
+	if crash_particles:
+		crash_particles.restart()
+		crash_particles.emitting = true
+
+	# 1. Authentic Reference: Large White Hexagonal Impact Clusters
+	var hex_offsets = [
+		Vector2(0.0, -18.0),
+		Vector2(-20.0, -6.0),
+		Vector2(22.0, -10.0),
+		Vector2(-14.0, 10.0),
+		Vector2(16.0, 8.0)
+	]
+	var hex_radii = [34.0, 28.0, 30.0, 24.0, 26.0]
+	for i in range(hex_offsets.size()):
+		var hex = Polygon2D.new()
+		hex.name = "WhiteHexImpact_%d" % i
+		hex.polygon = _create_hex_polygon(hex_radii[i])
+		hex.color = Color(1.0, 1.0, 1.0, 0.98)
+		hex.position = hex_offsets[i]
+		hex.rotation = float(i) * 0.4
+		add_child(hex)
+		
+		var ht = create_tween().set_parallel(true)
+		ht.tween_property(hex, "scale", Vector2(1.25, 1.25), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		ht.tween_property(hex, "scale", Vector2(0.2, 0.2), 0.26).set_delay(0.12)
+		ht.tween_property(hex, "modulate:a", 0.0, 0.26).set_delay(0.12)
+		ht.chain().tween_callback(hex.queue_free)
+
+	# 2. Authentic Reference: Tumbling Astronaut Helmet/Pod Shard
+	var helmet = Node2D.new()
+	helmet.name = "TumblingHelmet"
+	var helmet_hull = Polygon2D.new()
+	helmet_hull.polygon = _create_hex_polygon(13.0)
+	helmet_hull.color = Color(0.92, 0.94, 0.98, 1.0)
+	helmet.add_child(helmet_hull)
+	
+	var visor = Polygon2D.new()
+	visor.polygon = PackedVector2Array([Vector2(-6, -4), Vector2(6, -4), Vector2(5, 4), Vector2(-5, 4)])
+	visor.color = Color(1.0, 0.75, 0.15, 1.0)
+	helmet.add_child(visor)
+	helmet.position = Vector2(0.0, -10.0)
+	add_child(helmet)
+	
+	var helmet_tween = create_tween().set_parallel(true)
+	helmet_tween.tween_property(helmet, "position", Vector2(75.0, -35.0), 0.38).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	helmet_tween.tween_property(helmet, "rotation", 4.2, 0.38)
+	helmet_tween.chain().tween_property(helmet, "position:y", 25.0, 0.22)
+	helmet_tween.parallel().tween_property(helmet, "modulate:a", 0.0, 0.22)
+	helmet_tween.chain().tween_callback(helmet.queue_free)
+
+	# 3. Authentic Reference: Dense Upward-Fanning Multicolored Confetti Spray
+	var confetti_palette = [
+		Color(1.0, 0.18, 0.65, 1.0), # Neon Magenta
+		Color(0.12, 0.90, 1.0, 1.0),  # Electric Cyan
+		Color(1.0, 0.95, 0.10, 1.0),  # Bright Sun Yellow
+		Color(0.20, 0.98, 0.35, 1.0), # Lime Green
+		Color(1.0, 0.45, 0.05, 1.0),  # Sunset Orange
+		Color(0.72, 0.25, 1.0, 1.0),  # Deep Royal Purple
+		Color(1.0, 1.0, 1.0, 1.0)     # Pure White
+	]
+	
+	for col in confetti_palette:
+		var emitter = CPUParticles2D.new()
+		emitter.name = "ConfettiPlume"
+		emitter.emitting = false
+		emitter.one_shot = true
+		emitter.explosiveness = 0.95
+		emitter.amount = 26
+		emitter.lifetime = 0.58
+		emitter.direction = Vector2(0.0, -1.0)
+		emitter.spread = 70.0
+		emitter.gravity = Vector2(0.0, 480.0)
+		emitter.initial_velocity_min = 240.0
+		emitter.initial_velocity_max = 520.0
+		emitter.scale_amount_min = 3.5
+		emitter.scale_amount_max = 7.0
+		emitter.color = col
+		add_child(emitter)
+		emitter.restart()
+		emitter.emitting = true
+		
+		var clean_e = create_tween()
+		clean_e.tween_interval(0.65)
+		clean_e.tween_callback(emitter.queue_free)
+
+	# 4. Outward Diagonal Speed Rays (Left, Right, Center Plumes)
+	var ray_angles = [Vector2(-0.85, -0.52), Vector2(0.85, -0.52), Vector2(0.0, -1.0)]
+	for dir in ray_angles:
+		var ray = CPUParticles2D.new()
+		ray.name = "SpeedRay"
+		ray.emitting = false
+		ray.one_shot = true
+		ray.explosiveness = 0.98
+		ray.amount = 14
+		ray.lifetime = 0.45
+		ray.direction = dir
+		ray.spread = 18.0
+		ray.gravity = Vector2(0.0, 200.0)
+		ray.initial_velocity_min = 380.0
+		ray.initial_velocity_max = 580.0
+		ray.scale_amount_min = 4.0
+		ray.scale_amount_max = 8.0
+		ray.color = Color(1.0, 0.95, 0.7, 1.0)
+		add_child(ray)
+		ray.restart()
+		ray.emitting = true
+		
+		var clean_r = create_tween()
+		clean_r.tween_interval(0.55)
+		clean_r.tween_callback(ray.queue_free)
+
+static func _create_hex_polygon(radius: float) -> PackedVector2Array:
+	var pts = PackedVector2Array()
+	for i in range(6):
+		var a = (float(i) / 6.0) * TAU - (PI / 6.0)
+		pts.append(Vector2(cos(a), sin(a)) * radius)
+	return pts
 
 func _update_particles(left_on: bool, right_on: bool) -> void:
 	if left_particles:
