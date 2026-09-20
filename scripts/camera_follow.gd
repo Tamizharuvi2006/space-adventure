@@ -1,36 +1,34 @@
 extends Camera2D
 class_name SolarCamera
 
-# ── Explore Sun V6.1 — Fixed-Height Horizontal Side-Scrolling Camera ─────────
+# ── Explore Sun V6.2 — Smooth Landing Camera Transition (Mars: Mars Style) ──
 # Principles:
 # 1. FIXED VERTICAL CAMERA HEIGHT:
-#    - Camera Y does NOT follow player.global_position.y.
-#    - No vertical camera tracking, no vertical lookahead, no vertical deadzone.
-#    - When astronaut rises: PLAYER moves UP on screen, CAMERA Y STAYS FIXED.
-#    - When astronaut falls: PLAYER moves DOWN on screen, CAMERA Y STAYS FIXED.
-#    - Pads and terrain remain in the exact same vertical screen position during flight.
-# 2. HORIZONTAL MOVEMENT WITH DIRECTIONAL TRAVEL COMPOSITION:
-#    - Camera X smoothly tracks travel direction.
-#    - Rightward travel: player sits at ~38%–42% of viewport width (more space ahead on right).
-#    - Leftward travel: player sits at ~58%–62% of viewport width (more space ahead on left).
-# 3. NO RECENTERING ON LANDING:
-#    - When landed, the player remains naturally offset at ~40% with the forward path ahead.
-# 4. FIXED VERTICAL SCALE:
-#    - No vertical zoom compensation.
-#    - Subtle horizontal zoom adjustment (0.94 to 1.00) only for distant jumps.
+#    - camera.position.y is strictly locked throughout the entire game.
+#    - Never interpolate camera Y, never follow player Y, no vertical lookahead.
+#    - No vertical landing movement: terrain and pads remain in stable vertical world coordinates.
+# 2. SMOOTH CONTINUOUS HORIZONTAL TRANSITION:
+#    - Camera follows a LIVE horizontal target using exponential damping:
+#      camera.position.x = lerp(target_x, 1.0 - exp(-smooth_speed * delta))
+#    - On landing, the camera gently glides into the new framing over ~0.5–0.8 seconds.
+#    - NO instant jump or snap when landing, changing pads, or relaunching.
+# 3. DIRECTIONAL COMPOSITION (MARS-STYLE):
+#    - Rightward travel / resting with route ahead: player ≈ 38%–42% from left edge.
+#    - Leftward travel: player ≈ 58%–62% from left edge.
+# 4. LIVE TARGET TRACKING:
+#    - No static tweens; if player relaunches during landing glide, the camera immediately
+#      follows the new live flight vector smoothly.
 
 @export var follow_target: Node2D
 @export var smooth_speed: float = 5.0
 
-# Fixed vertical camera world position
+# Strictly fixed vertical camera world position
 var fixed_world_y: float = 420.0
+var default_vertical_offset: float = -65.0
 
 # Current smooth screen fraction (where player sits horizontally on screen)
 var current_screen_frac_x: float = 0.40
 var target_screen_frac_x: float = 0.40
-
-# Compatibility with main.gd / HUD
-var default_vertical_offset: float = -65.0
 
 var trauma: float = 0.0
 var max_angle: float = 0.02
@@ -60,8 +58,7 @@ func _process(delta: float) -> void:
 		snap_to_target()
 		is_initialized = true
 
-	# ─── 1. Horizontal Travel Direction & Screen Composition ─────────────────
-	# Default: player at 40% when heading right, 60% when heading left
+	# ─── 1. Determine Horizontal Directional Composition ─────────────────────
 	var travel_dir_x: float = 1.0
 	if is_instance_valid(target_platform):
 		var dx_to_pad = target_platform.global_position.x - p_pos.x
@@ -73,21 +70,24 @@ func _process(delta: float) -> void:
 
 	var desired_frac_x: float = 0.40 if travel_dir_x > 0.0 else 0.60
 
-	# Dynamic velocity lookahead (shifts composition slightly forward during fast cruise)
+	# Dynamic velocity lookahead (subtle forward bias during fast flight)
 	var vel_offset_x = clampf(p_vel.x / 600.0, -0.05, 0.05)
 	target_screen_frac_x = clampf(desired_frac_x - vel_offset_x, 0.35, 0.65)
 
 	# Smoothly interpolate the horizontal screen composition anchor
-	current_screen_frac_x = lerpf(current_screen_frac_x, target_screen_frac_x, 4.0 * delta)
+	var frac_blend = 1.0 - exp(-4.0 * delta)
+	current_screen_frac_x = lerpf(current_screen_frac_x, target_screen_frac_x, frac_blend)
 
-	# ─── 2. Horizontal Camera Position ───────────────────────────────────────
+	# ─── 2. Smooth Live Horizontal Camera Follow ─────────────────────────────
 	var screen_offset_x = (current_screen_frac_x - 0.5) * vp_size.x
 	var target_cam_x = p_pos.x - (screen_offset_x / zoom.x)
-	global_position.x = lerpf(global_position.x, target_cam_x, smooth_speed * delta)
 
-	# ─── 3. STRICTLY FIXED VERTICAL CAMERA HEIGHT ────────────────────────────
-	# Camera Y NEVER follows player Y during gameplay.
-	# The player moves vertically on screen; camera Y is locked.
+	# Continuous exponential smoothing (smooth damp) ensures zero jumps
+	var cam_blend = 1.0 - exp(-smooth_speed * delta)
+	global_position.x = lerpf(global_position.x, target_cam_x, cam_blend)
+
+	# ─── 3. STRICTLY LOCKED VERTICAL CAMERA HEIGHT ───────────────────────────
+	# Never interpolate camera Y, never follow player Y. Y is strictly fixed.
 	global_position.y = fixed_world_y
 
 	# ─── 4. Stable Scale & Subtle Horizontal Zoom ────────────────────────────
@@ -100,7 +100,8 @@ func _process(delta: float) -> void:
 		var zoom_t = clampf((dist_to_pad - 650.0) / 750.0, 0.0, 1.0)
 		target_zoom_val = lerpf(1.0, 0.94, zoom_t)
 
-	var new_z = lerpf(zoom.x, target_zoom_val, 2.5 * delta)
+	var zoom_blend = 1.0 - exp(-2.5 * delta)
+	var new_z = lerpf(zoom.x, target_zoom_val, zoom_blend)
 	zoom = Vector2(new_z, new_z)
 
 	# ─── 5. Screen Shake Trauma ──────────────────────────────────────────────
@@ -133,7 +134,7 @@ func snap_to_target() -> void:
 	var screen_offset_x = (current_screen_frac_x - 0.5) * vp_size.x
 	global_position.x = follow_target.global_position.x - (screen_offset_x / zoom.x)
 
-	# Initialize fixed Y to comfortable baseline
+	# Fixed baseline Y initialized once from starting position
 	fixed_world_y = follow_target.global_position.y - 65.0
 	global_position.y = fixed_world_y
 
@@ -143,11 +144,8 @@ func add_trauma(amount: float) -> void:
 func notify_landed(platform: Node2D) -> void:
 	add_trauma(0.06)
 	current_docked_platform = platform
-	# When landed, update fixed vertical height to this platform's baseline
-	if is_instance_valid(platform):
-		fixed_world_y = platform.global_position.y - 65.0
-
-	# Keep directional offset towards next platform
+	# DO NOT change fixed_world_y on landing - vertical camera remains strictly locked!
+	# Update target horizontal composition towards the upcoming target platform
 	if is_instance_valid(target_platform) and target_platform != platform:
 		var dx = target_platform.global_position.x - platform.global_position.x
 		target_screen_frac_x = 0.40 if dx >= 0.0 else 0.60
