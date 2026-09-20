@@ -1,0 +1,31 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/background.tscn" id="2_bg"]
+[ext_resource type="Script" path="res://scripts/world_generator.gd" id="3_world_gen"]
+[ext_resource type="PackedScene" path="res://scenes/platform.tscn" id="4_platform_scene"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="5_player"]
+[ext_resource type="Script" path="res://scripts/camera_follow.gd" id="6_cam"]
+[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="7_hud"]
+[ext_resource type="Script" path="res://scripts/sound_manager.gd" id="8_sound"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="Background" parent="." instance=ExtResource("2_bg")]
+
+[node name="WorldGenerator" type="Node2D" parent="."]
+script = ExtResource("3_world_gen")
+platform_scene = ExtResource("4_platform_scene")
+
+[node name="Player" parent="." instance=ExtResource("5_player")]
+position = Vector2(100, 560)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(100, 560)
+script = ExtResource("6_cam")
+
+[node name="HUD" parent="." instance=ExtResource("7_hud")]
+
+[node name="SoundManager" type="Node" parent="."]
+script = ExtResource("8_sound")

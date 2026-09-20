@@ -1,0 +1,136 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/platform.gd" id="1_platform"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_solid"]
+size = Vector2(204, 16)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_landing"]
+size = Vector2(196, 14)
+
+[sub_resource type="LabelSettings" id="LabelSettings_num"]
+font_size = 11
+font_color = Color(1.0, 1.0, 1.0, 0.95)
+outline_size = 2
+outline_color = Color(0.20, 0.05, 0.02, 1.0)
+
+[sub_resource type="Gradient" id="Gradient_land_sparks"]
+offsets = PackedFloat32Array(0, 0.4, 1)
+colors = PackedColorArray(1, 1, 0.9, 1, 1, 0.6, 0.15, 0.8, 0.5, 0.2, 0.05, 0)
+
+[node name="Platform" type="StaticBody2D" groups=["platform"]]
+z_index = 10
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_platform")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -2)
+shape = SubResource("RectangleShape2D_solid")
+
+[node name="LandingArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 1
+
+[node name="LandingShape" type="CollisionShape2D" parent="LandingArea"]
+position = Vector2(0, -17)
+shape = SubResource("RectangleShape2D_landing")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="BeaconBeam" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.2, 0.95, 0.8, 0.0)
+
+[node name="ContactShadow" type="Polygon2D" parent="Visuals"]
+color = Color(0, 0, 0, 0.40)
+polygon = PackedVector2Array(-85, 78, 85, 78, 75, 86, -75, 86)
+
+[node name="SinglePylon" type="Polygon2D" parent="Visuals"]
+color = Color(0.72, 0.70, 0.66, 1)
+polygon = PackedVector2Array(-7, 14, 7, 14, 6, 78, -6, 78)
+
+[node name="DiagonalStrutL" type="Polygon2D" parent="Visuals"]
+color = Color(0.65, 0.62, 0.58, 1)
+polygon = PackedVector2Array(-36, 22, -26, 22, -54, 76, -66, 76)
+
+[node name="DiagonalStrutR" type="Polygon2D" parent="Visuals"]
+color = Color(0.65, 0.62, 0.58, 1)
+polygon = PackedVector2Array(26, 22, 36, 22, 66, 76, 54, 76)
+
+[node name="SupportDeck" type="Polygon2D" parent="Visuals"]
+color = Color(0.24, 0.26, 0.30, 1)
+polygon = PackedVector2Array(-68, 12, 68, 12, 58, 24, -58, 24)
+
+[node name="FoundationFootingL" type="Polygon2D" parent="Visuals"]
+color = Color(0.38, 0.35, 0.32, 1)
+polygon = PackedVector2Array(-74, 70, -46, 70, -42, 82, -78, 82)
+
+[node name="FoundationFootingR" type="Polygon2D" parent="Visuals"]
+color = Color(0.38, 0.35, 0.32, 1)
+polygon = PackedVector2Array(46, 70, 74, 70, 78, 82, 42, 82)
+
+[node name="ConduitCable" type="Polygon2D" parent="Visuals"]
+color = Color(0.15, 0.16, 0.18, 0.85)
+polygon = PackedVector2Array(-18, 18, -14, 18, -24, 74, -28, 74)
+
+[node name="PlatformHull" type="Polygon2D" parent="Visuals"]
+color = Color(0.92, 0.90, 0.85, 1)
+polygon = PackedVector2Array(-102, -10, 102, -10, 96, 14, -96, 14)
+
+[node name="PlatformTopEdge" type="Polygon2D" parent="Visuals"]
+color = Color(1.0, 1.0, 0.98, 1)
+polygon = PackedVector2Array(-102, -10, 102, -10, 100, -7, -100, -7)
+
+[node name="SolarAccent" type="Polygon2D" parent="Visuals"]
+color = Color(0.85, 0.22, 0.15, 1)
+polygon = PackedVector2Array(-44, -10, 44, -10, 40, 2, -40, 2)
+
+[node name="LandingSurface" type="Polygon2D" parent="Visuals"]
+color = Color(0.35, 0.78, 0.65, 1)
+polygon = PackedVector2Array(-90, -10, 90, -10, 88, -7, -88, -7)
+
+[node name="CenterLine" type="Polygon2D" parent="Visuals"]
+color = Color(1, 1, 1, 0.80)
+polygon = PackedVector2Array(-4, -10, 4, -10, 4, -5, -4, -5)
+
+[node name="BeaconLight" type="ColorRect" parent="Visuals"]
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = -4.0
+color = Color(0.25, 0.85, 0.70, 1)
+
+[node name="BeaconOrbL" type="Polygon2D" parent="Visuals"]
+color = Color(0.25, 0.85, 0.70, 1)
+polygon = PackedVector2Array(-98, -15, -84, -15, -84, -4, -98, -4)
+
+[node name="BeaconOrbR" type="Polygon2D" parent="Visuals"]
+color = Color(0.85, 0.70, 0.25, 1)
+polygon = PackedVector2Array(84, -15, 98, -15, 98, -4, 84, -4)
+
+[node name="LandingSparks" type="CPUParticles2D" parent="Visuals"]
+position = Vector2(0, -10)
+emitting = false
+one_shot = true
+explosiveness = 0.9
+amount = 35
+lifetime = 0.55
+direction = Vector2(0, -1)
+spread = 80.0
+gravity = Vector2(0, 380)
+initial_velocity_min = 90.0
+initial_velocity_max = 200.0
+scale_amount_min = 2.0
+scale_amount_max = 5.0
+color_ramp = SubResource("Gradient_land_sparks")
+
+[node name="Label" type="Label" parent="."]
+offset_left = -30.0
+offset_top = -3.0
+offset_right = 30.0
+offset_bottom = 10.0
+text = "00"
+label_settings = SubResource("LabelSettings_num")
+horizontal_alignment = 1
+vertical_alignment = 1
