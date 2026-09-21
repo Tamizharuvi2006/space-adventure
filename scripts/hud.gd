@@ -586,6 +586,34 @@ func show_zone_arrival_banner(zone: Dictionary) -> void:
 	# Smooth fade out over 0.45 seconds
 	banner_tween.chain().tween_property(planet_arrival_card, "modulate:a", 0.0, 0.45)
 
+func show_milestone_banner(title_text: String, subtitle_text: String) -> void:
+	if not planet_arrival_card:
+		return
+		
+	if arrival_icon:
+		arrival_icon.visible = false
+		arrival_icon.text = ""
+	if arrival_title:
+		arrival_title.text = title_text.to_upper()
+	if arrival_sub:
+		arrival_sub.text = subtitle_text.to_upper()
+	
+	if banner_tween and banner_tween.is_valid():
+		banner_tween.kill()
+		
+	planet_arrival_card.scale = Vector2.ONE
+	planet_arrival_card.offset_top = ZONE_BANNER_BASE_TOP + 12.0
+	planet_arrival_card.offset_bottom = ZONE_BANNER_BASE_TOP + 12.0 + 64.0
+	planet_arrival_card.modulate.a = 0.0
+	
+	banner_tween = create_tween()
+	banner_tween.set_parallel(true)
+	banner_tween.tween_property(planet_arrival_card, "offset_top", ZONE_BANNER_BASE_TOP, 0.32).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	banner_tween.tween_property(planet_arrival_card, "offset_bottom", ZONE_BANNER_BASE_TOP + 64.0, 0.32).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	banner_tween.tween_property(planet_arrival_card, "modulate:a", 1.0, 0.28)
+	banner_tween.chain().tween_interval(1.5)
+	banner_tween.chain().tween_property(planet_arrival_card, "modulate:a", 0.0, 0.45)
+
 # Legacy compatibility
 func show_planet_arrival_banner(planet: Dictionary) -> void:
 	show_zone_arrival_banner(planet)

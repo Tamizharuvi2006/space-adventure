@@ -279,6 +279,13 @@ func _on_player_landed(platform: Node2D, is_perfect: bool) -> void:
 				background.transition_to_zone(zone, 2.0)
 				
 			print("[JOURNEY] Entered %s! (Zone %d)" % [zone["name"], new_zone_idx])
+		elif current_pad % 10 == 0 and current_pad < SunZoneData.TOTAL_PADS:
+			# 10-Pad Milestone transition (Pads 10, 30, 50, 70, 90)
+			var bp = world_gen.get_pad_blueprint(current_pad, 0)
+			var chapter_title = bp.get("chapter", "MILESTONE")
+			hud.show_milestone_banner(chapter_title, "%d / %d MILESTONE" % [current_pad, SunZoneData.TOTAL_PADS])
+			sound_manager.play_record()
+			print("[JOURNEY] Reached Milestone Pad %d: %s" % [current_pad, chapter_title])
 		
 		# Journey completion check (ONLY when reaching Pad 100)
 		if current_pad >= SunZoneData.TOTAL_PADS:

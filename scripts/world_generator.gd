@@ -72,159 +72,134 @@ const SolarFlightValidator = preload("res://scripts/flight_validator.gd")
 
 func get_pad_blueprint(idx: int, curr_y: float) -> Dictionary:
 	var motif = SolarTerrainGenerator.FormationType.MESA
-	var dx: float = 780.0
+	var dx: float = 1200.0
 	var dy: float = 0.0
 	var chapter: String = "Expedition"
-	var is_milestone: bool = (idx % 20 == 0)
+	var is_milestone: bool = (idx % 10 == 0)
 
 	# ─── 2D Macro Chapters across all 100 Landing Stations ────────────────────
+	# Pacing: short -> medium -> long -> recovery -> long rhythms
+	# Total route designed for ~18–20 minute journey
 	match idx:
-		# ── Zone 0: SOLAR VALLEY (Pads 1–20) ──────────────────────────────────
-		# Chapter 1: Valley Ascent (1–5) — Coherent upward climb from valley floor
-		1:  dx = 720.0; dy = -60.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Valley Ascent"
-		2:  dx = 780.0; dy = -70.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Valley Ascent"
-		3:  dx = 850.0; dy = -80.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Valley Ascent"
-		4:  dx = 760.0; dy = -70.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Valley Ascent"
-		5:  dx = 860.0; dy = -80.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Valley Crest"
+		# ── Zone 0: SOLAR VALLEY (Pads 1–20) — ~3.0–3.5 min ──────────────────
+		1:  dx = 950.0;  dy = -50.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Valley Ascent"
+		2:  dx = 1200.0; dy = -70.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Valley Ascent"
+		3:  dx = 1550.0; dy = -90.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Valley Climb"
+		4:  dx = 920.0;  dy = -40.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Valley Shelf"
+		5:  dx = 1480.0; dy = -70.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Valley Ridge"
+		6:  dx = 1100.0; dy =  80.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Gorge Entrance"
+		7:  dx = 1650.0; dy = 140.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Gorge Descent"
+		8:  dx = 950.0;  dy =  70.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Gorge Terrace"
+		9:  dx = 1400.0; dy = 110.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Gorge Floor"
+		10: dx = 1750.0; dy = -110.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Valley Crest"; is_milestone = true
+		11: dx = 1000.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Ridge Trail"
+		12: dx = 1450.0; dy = -90.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Ridge Steps"
+		13: dx = 1700.0; dy = -120.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "High Arête"
+		14: dx = 980.0;  dy = -40.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Arête Shelf"
+		15: dx = 1850.0; dy =  20.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "High Traverse"
+		16: dx = 1250.0; dy =  40.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Canyon Step"
+		17: dx = 1900.0; dy = -30.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Canyon Overlook"
+		18: dx = 1050.0; dy =  50.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Lookout Shelf"
+		19: dx = 1450.0; dy =  60.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Milestone Bluff"
+		20: dx = 2050.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Valley Milestone"; is_milestone = true
 
-		# Chapter 2: Great Canyon Chasm (6–9) — Plunging into the deep solar canyon
-		6:  dx = 920.0;  dy = 160.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Gorge Descent"
-		7:  dx = 1050.0; dy = 210.0; motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Gorge Descent"
-		8:  dx = 960.0;  dy = 220.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Gorge Chasm"
-		9:  dx = 880.0;  dy = 170.0; motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Gorge Floor"
+		# ── Zone 1: SOLAR CRATERS (Pads 21–40) — ~3.5 min ─────────────────────
+		21: dx = 1180.0; dy = -90.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Crater Rim Climb"
+		22: dx = 1600.0; dy = -130.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Outer Wall Ascent"
+		23: dx = 2000.0; dy = -150.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Crater Lip"
+		24: dx = 1080.0; dy = -60.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Lip Terrace"
+		25: dx = 1650.0; dy = -110.0; motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Rim Summit"
+		26: dx = 1350.0; dy = 160.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Bowl Plunge"
+		27: dx = 2150.0; dy = 210.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Deep Basin Traverse"
+		28: dx = 1120.0; dy = 110.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Inner Terraces"
+		29: dx = 1800.0; dy = 170.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Crater Basin"
+		30: dx = 1300.0; dy =  90.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Basin Floor"; is_milestone = true
+		31: dx = 1250.0; dy = -120.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Central Peak Uplift"
+		32: dx = 1750.0; dy = -160.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Central Peak Wall"
+		33: dx = 2100.0; dy = -170.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Peak Arête"
+		34: dx = 1150.0; dy = -70.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Peak Shoulder"
+		35: dx = 1850.0; dy = -130.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Central Summit"
+		36: dx = 1380.0; dy =  40.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Outer Wall Exit"
+		37: dx = 2200.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Wall Expanse"
+		38: dx = 1180.0; dy = -60.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Exit Col"
+		39: dx = 1700.0; dy = -70.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Outer Rim"
+		40: dx = 2250.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Craters Milestone"; is_milestone = true
 
-		# Chapter 3: High Ridge Ascent (10–14) — Scaling the sheer vertical wall
-		10: dx = 760.0; dy = -150.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Ridge Ascent"
-		11: dx = 820.0; dy = -170.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Ridge Ascent"
-		12: dx = 780.0; dy = -180.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Ridge Wall"
-		13: dx = 860.0; dy = -150.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "High Arête"
-		14: dx = 800.0; dy = -110.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Plateau Edge"
+		# ── Zone 2: SOLAR MOUNTAINS (Pads 41–60) — ~3.8 min ───────────────────
+		41: dx = 1280.0; dy = -90.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Massif Ascent"
+		42: dx = 1750.0; dy = -120.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Massif Face"
+		43: dx = 2300.0; dy = -150.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Glacier Shoulder"
+		44: dx = 1200.0; dy = -60.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "High Plateau"
+		45: dx = 1900.0; dy = -130.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Peak Ascent"
+		46: dx = 2400.0; dy = -100.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Summit Horn"
+		47: dx = 1250.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Solar Summit"
+		48: dx = 1950.0; dy =  40.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Summit Plateau"
+		49: dx = 1450.0; dy = 160.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Glacial Cirque Plunge"
+		50: dx = 2350.0; dy = 210.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Glacial Gorge Expanse"; is_milestone = true
+		51: dx = 1220.0; dy = 120.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Ice Canyon Shelf"
+		52: dx = 1850.0; dy = 170.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Chasm Shelf"
+		53: dx = 2250.0; dy = 120.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Gorge Floor"
+		54: dx = 1280.0; dy =  70.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Valley Basin"
+		55: dx = 1500.0; dy = -100.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Razor Ridge"
+		56: dx = 2000.0; dy = -140.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Razor Wall"
+		57: dx = 2450.0; dy = -130.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Arête Crest"
+		58: dx = 1220.0; dy = -60.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Mountain Col"
+		59: dx = 1800.0; dy = -90.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "High Spire"
+		60: dx = 2500.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Mountains Milestone"; is_milestone = true
 
-		# Chapter 4: Highland Traverse (15–17) — High-altitude scenic flights
-		15: dx = 1040.0; dy = -20.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "High Traverse"
-		16: dx = 880.0;  dy = 30.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "High Step"
-		17: dx = 1100.0; dy = -20.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Canyon Overlook"
+		# ── Zone 3: SOLAR RUINS (Pads 61–80) — ~4.0 min ───────────────────────
+		61: dx = 1500.0; dy = 140.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Ruins Descent"
+		62: dx = 2050.0; dy = 190.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Sunken Terraces"
+		63: dx = 2450.0; dy = 220.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Colosseum Abyss"
+		64: dx = 1350.0; dy = 120.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Pillar Shelf"
+		65: dx = 2150.0; dy = 170.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Sunken Arena"
+		66: dx = 2400.0; dy = 140.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Amphitheater"
+		67: dx = 1400.0; dy =  80.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Lower Forum"
+		68: dx = 2000.0; dy =  60.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Colosseum Floor"
+		69: dx = 1550.0; dy = -100.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Temple Steps"
+		70: dx = 2500.0; dy = -130.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Megalithic Pyramid Ascent"; is_milestone = true
+		71: dx = 1450.0; dy = -60.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Pyramid Bastion"
+		72: dx = 2100.0; dy = -120.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Pyramid Wall"
+		73: dx = 2550.0; dy = -140.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Outer Bastion Climb"
+		74: dx = 1400.0; dy = -70.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Bastion Crest"
+		75: dx = 2250.0; dy = -110.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Upper Sanctum"
+		76: dx = 2500.0; dy = -90.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Sanctum Colonnade"
+		77: dx = 1450.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Sun Altar"
+		78: dx = 2200.0; dy = -70.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Apex Tier"
+		79: dx = 1850.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "High Monolith"
+		80: dx = 2600.0; dy = -40.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Ruins Milestone"; is_milestone = true
 
-		# Chapter 5: Milestone 20 Approach (18–20)
-		18: dx = 820.0;  dy = 50.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Canyon Shelf"
-		19: dx = 920.0;  dy = 70.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Milestone Bluff"
-		20: dx = 1180.0; dy = -60.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Valley Milestone"; is_milestone = true
-
-		# ── Zone 1: SOLAR CRATERS (Pads 21–40) ────────────────────────────────
-		# Chapter 6: Crater Outer Rim Ascent (21–25)
-		21: dx = 780.0; dy = -120.0; motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Crater Rim Climb"
-		22: dx = 840.0; dy = -140.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Crater Rim Climb"
-		23: dx = 800.0; dy = -150.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Crater Lip"
-		24: dx = 920.0; dy = -120.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Outer Wall Crest"
-		25: dx = 860.0; dy = -80.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Rim Summit"
-
-		# Chapter 7: Deep Impact Bowl Plunge (26–30) — Massive descent into crater abyss
-		26: dx = 980.0;  dy = 190.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Bowl Plunge"
-		27: dx = 1120.0; dy = 240.0; motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Bowl Plunge"
-		28: dx = 960.0;  dy = 250.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Inner Terraces"
-		29: dx = 1080.0; dy = 210.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Crater Basin"
-		30: dx = 880.0;  dy = 160.0; motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Basin Floor"
-
-		# Chapter 8: Central Peak Rebound Uplift (31–35) — Giant central mountain
-		31: dx = 780.0; dy = -150.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Central Peak Uplift"
-		32: dx = 850.0; dy = -170.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Central Peak Uplift"
-		33: dx = 810.0; dy = -180.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Peak Arête"
-		34: dx = 900.0; dy = -160.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Central Summit"
-		35: dx = 840.0; dy = -120.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Peak Shoulder"
-
-		# Chapter 9: Outer Wall Exit to Milestone 40 (36–40)
-		36: dx = 1020.0; dy = 50.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Wall Traverse"
-		37: dx = 860.0;  dy = -60.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Exit Ascent"
-		38: dx = 940.0;  dy = -80.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Exit Ascent"
-		39: dx = 820.0;  dy = -50.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Outer Rim"
-		40: dx = 1200.0; dy = -40.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Craters Milestone"; is_milestone = true
-
-		# ── Zone 2: SOLAR MOUNTAINS (Pads 41–60) ──────────────────────────────
-		# Chapter 10: Alpine Massif Ascent (41–48) — Massive climb to highest solar peaks
-		41: dx = 760.0; dy = -110.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Massif Ascent"
-		42: dx = 820.0; dy = -130.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Massif Ascent"
-		43: dx = 880.0; dy = -150.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Glacier Shoulder"
-		44: dx = 790.0; dy = -140.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "High Ridge"
-		45: dx = 850.0; dy = -120.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Peak Ascent"
-		46: dx = 910.0; dy = -100.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Summit Horn"
-		47: dx = 840.0; dy = -70.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Solar Summit"
-		48: dx = 950.0; dy = -40.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Summit Plateau"
-
-		# Chapter 11: Glacial Cirque Plunge (49–54) — Sheer descent down mountain gorge
-		49: dx = 1020.0; dy = 180.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Glacial Descent"
-		50: dx = 1120.0; dy = 230.0; motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Glacial Gorge"
-		51: dx = 960.0;  dy = 250.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Ice Canyon"
-		52: dx = 1060.0; dy = 210.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Chasm Shelf"
-		53: dx = 910.0;  dy = 170.0; motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Gorge Floor"
-		54: dx = 850.0;  dy = 110.0; motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Valley Basin"
-
-		# Chapter 12: Razor Ridge to Milestone 60 (55–60)
-		55: dx = 780.0;  dy = -110.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Razor Ridge"
-		56: dx = 840.0;  dy = -130.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Razor Ridge"
-		57: dx = 810.0;  dy = -150.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Arête Crest"
-		58: dx = 900.0;  dy = -120.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Mountain Col"
-		59: dx = 850.0;  dy = -80.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "High Spire"
-		60: dx = 1160.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Mountains Milestone"; is_milestone = true
-
-		# ── Zone 3: SOLAR RUINS (Pads 61–80) ──────────────────────────────────
-		# Chapter 13: Sunken Colosseum Descent (61–68) — Plunge into ancient alien ruins
-		61: dx = 950.0;  dy = 150.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Ruins Descent"
-		62: dx = 1060.0; dy = 200.0; motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Sunken Terraces"
-		63: dx = 1120.0; dy = 230.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Megalithic Steps"
-		64: dx = 960.0;  dy = 210.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Pillar Abyss"
-		65: dx = 1040.0; dy = 180.0; motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Sunken Arena"
-		66: dx = 910.0;  dy = 150.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Amphitheater"
-		67: dx = 860.0;  dy = 120.0; motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Lower Forum"
-		68: dx = 820.0;  dy = 80.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Colosseum Floor"
-
-		# Chapter 14: Megalithic Pyramid Ascent (69–80) — Climbing stepped monument terraces
-		69: dx = 760.0;  dy = -100.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Temple Steps"
-		70: dx = 820.0;  dy = -120.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Temple Steps"
-		71: dx = 870.0;  dy = -140.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Pyramid Terrace"
-		72: dx = 790.0;  dy = -150.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Pyramid Wall"
-		73: dx = 840.0;  dy = -130.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Outer Bastion"
-		74: dx = 900.0;  dy = -110.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Bastion Crest"
-		75: dx = 840.0;  dy = -100.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Upper Sanctum"
-		76: dx = 940.0;  dy = -80.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Sanctum Colonnade"
-		77: dx = 870.0;  dy = -70.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Sun Altar"
-		78: dx = 910.0;  dy = -60.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Apex Tier"
-		79: dx = 850.0;  dy = -50.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "High Monolith"
-		80: dx = 1200.0; dy = -40.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Ruins Milestone"; is_milestone = true
-
-		# ── Zone 4: SOLAR CORE (Pads 81–100) ──────────────────────────────────
-		# Chapter 15: Magma Caldera Descent (81–88) — Plunge into volcanic core
-		81: dx = 960.0;  dy = 160.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Caldera Rim Plunge"
-		82: dx = 1070.0; dy = 210.0; motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Magma Cascades"
-		83: dx = 1130.0; dy = 230.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Basalt Terraces"
-		84: dx = 1000.0; dy = 220.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Magma Chasm"
-		85: dx = 1060.0; dy = 180.0; motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Caldera Shelf"
-		86: dx = 920.0;  dy = 150.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Lava Floor"
-		87: dx = 870.0;  dy = 110.0; motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Core Basin"
-		88: dx = 830.0;  dy = 70.0;   motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Molten Plains"
-
-		# Chapter 16: Solar Core Pillars Ascending to Apex (89–100) — Grand finale climb
-		89:  dx = 760.0;  dy = -110.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Core Spire Ascent"
-		90:  dx = 820.0;  dy = -130.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Core Spire Ascent"
-		91:  dx = 870.0;  dy = -150.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Plasma Spire"
-		92:  dx = 790.0;  dy = -140.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Column"
-		93:  dx = 840.0;  dy = -130.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Solar Pillar"
-		94:  dx = 910.0;  dy = -120.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Pillar Promenade"
-		95:  dx = 850.0;  dy = -110.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Corona Obelisk"
-		96:  dx = 930.0;  dy = -100.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "High Pillar"
-		97:  dx = 880.0;  dy = -80.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Threshold Spire"
-		98:  dx = 940.0;  dy = -70.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Apex Gate"
-		99:  dx = 870.0;  dy = -50.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "The Threshold"
-		100: dx = 1260.0; dy = -40.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "The Solar Core Apex"; is_milestone = true
+		# ── Zone 4: SOLAR CORE (Pads 81–100) — ~4.5 min ───────────────────────
+		81: dx = 1600.0; dy = 150.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Caldera Plunge"
+		82: dx = 2250.0; dy = 200.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Magma Cascades"
+		83: dx = 2650.0; dy = 210.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Great Caldera Traversal"
+		84: dx = 1450.0; dy = 120.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Basalt Shelf"
+		85: dx = 2350.0; dy = 170.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Magma Chasm"
+		86: dx = 2600.0; dy = 130.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Lava Floor Flight"
+		87: dx = 1500.0; dy =  80.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Core Basin"
+		88: dx = 2150.0; dy =  50.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Molten Plains"
+		89: dx = 1650.0; dy = -100.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Core Spire Climb"
+		90: dx = 2600.0; dy = -130.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Plasma Spire Summit"; is_milestone = true
+		91: dx = 1500.0; dy = -70.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Plasma Shoulder"
+		92: dx = 2250.0; dy = -120.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Column"
+		93: dx = 2650.0; dy = -130.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Grand Threshold Traversal"
+		94: dx = 1550.0; dy = -70.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Promenade Terrace"
+		95: dx = 2400.0; dy = -110.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Corona Obelisk"
+		96: dx = 2550.0; dy = -90.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "High Pillar Colonnade"
+		97: dx = 1600.0; dy = -60.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Threshold Spire"
+		98: dx = 2500.0; dy = -70.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Apex Gate"
+		99: dx = 2000.0; dy = -40.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "The Final Threshold"
+		100: dx = 2700.0; dy = -30.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "THE SOLAR CORE APEX"; is_milestone = true
 
 		_:
 			# Endless play beyond Pad 100
 			var cycle = idx % 10
 			if cycle < 4:
-				dx = 800.0; dy = -120.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Deep Space Crest"
+				dx = 1600.0; dy = -120.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Deep Space Crest"
 			elif cycle < 7:
-				dx = 1050.0; dy = 160.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT; chapter = "Cosmic Chasm"
+				dx = 2200.0; dy = 160.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT; chapter = "Cosmic Chasm"
 			else:
-				dx = 900.0; dy = -40.0;  motif = SolarTerrainGenerator.FormationType.MESA; chapter = "Stellar Mesa"
+				dx = 1800.0; dy = -40.0;  motif = SolarTerrainGenerator.FormationType.MESA; chapter = "Stellar Mesa"
 
 	return {
 		"dx": dx,
