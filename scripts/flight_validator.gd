@@ -26,7 +26,7 @@ const HARD_FUEL_FLOOR: float = 10.0
 
 static func simulate_flight(dx: float, dy: float, pad_width: float = 160.0, active_wind: float = 0.0, _active_updraft: float = 0.0) -> Dictionary:
 	var dt: float = 0.02
-	var max_sim_time: float = maxf(18.0, dx / 100.0 + 8.0)
+	var max_sim_time: float = maxf(22.0, dx / 70.0 + 8.0)
 
 	# 1. Starting state: exact reproduction of player.gd takeoff off platform
 	var px: float = 0.0
@@ -40,7 +40,7 @@ static func simulate_flight(dx: float, dy: float, pad_width: float = 160.0, acti
 	# Target cruise speed scaled to jump distance
 	var target_speed_x: float = clampf(dx / 7.0, 200.0, 320.0)
 	if dy > 80.0:
-		target_speed_x = clampf(dx / 8.0, 180.0, 280.0)
+		target_speed_x = clampf(dx / 7.5, 190.0, 290.0)
 
 	var floor_ref_y: float = maxf(0.0, dy)
 	var abyss_death_y: float = floor_ref_y + 280.0
@@ -56,16 +56,18 @@ static func simulate_flight(dx: float, dy: float, pad_width: float = 160.0, acti
 
 		# Parabolic altitude guidance from (0,0) to (dx, dy)
 		var progress: float = clampf(px / maxf(dx, 1.0), 0.0, 1.0)
-		var arc_apex_height: float = 80.0 + maxf(-dy * 0.35, 0.0)
+		var arc_apex_height: float = 40.0 + maxf(-dy * 0.25, 0.0)
+		if dy > 40.0:
+			arc_apex_height = clampf(40.0 - dy * 0.20, 15.0, 40.0)
 		var target_y: float = dy * progress - arc_apex_height * (1.0 - pow(progress * 2.0 - 1.0, 2.0))
 
-		var need_lift: bool = (py > target_y or vy > 120.0)
-		var urgent_lift: bool = (vy > 200.0 or py > target_y + 45.0)
+		var need_lift: bool = (py > target_y or vy > 40.0)
+		var urgent_lift: bool = (vy > 200.0 or py > target_y + 80.0)
 
 		if over_deck and py >= dy - 65.0:
 			# Close to landing deck: let gentle gravity settle the craft onto the pad
-			need_lift = (vy > 220.0)
-			urgent_lift = (vy > 320.0)
+			need_lift = (vy > 100.0)
+			urgent_lift = (vy > 180.0)
 
 		var left_active: bool = false
 		var right_active: bool = false
@@ -73,9 +75,9 @@ static func simulate_flight(dx: float, dy: float, pad_width: float = 160.0, acti
 		if urgent_lift:
 			left_active = true
 			right_active = true
-			if want_brake:
+			if want_brake and vy < 80.0:
 				right_active = false
-			elif want_accel and vy < 60.0:
+			elif want_accel and vy < 120.0:
 				left_active = false
 		elif need_lift:
 			if want_brake:
@@ -97,18 +99,30 @@ static func simulate_flight(dx: float, dy: float, pad_width: float = 160.0, acti
 		# Dual thruster force calculation
 		var thrust_x: float = 0.0
 		var thrust_y: float = 0.0
-		if left_active:
+		if left_active and right_active:
+			thrust_x = 0.0
+			if vy <= 0.0:
+				thrust_y = THRUST_VERTICAL * 1.4
+			else:
+				var target_landing_descent_speed: float = 60.0
+				if vy > target_landing_descent_speed:
+					var excess_vy: float = vy - target_landing_descent_speed
+					var brake_decel: float = excess_vy * 3.5
+					thrust_y = clampf(GRAVITY + brake_decel, 0.0, 1800.0)
+				else:
+					thrust_y = GRAVITY * clampf(vy / target_landing_descent_speed, 0.0, 1.0)
+		elif left_active:
 			thrust_x -= THRUST_HORIZONTAL
 			thrust_y += THRUST_VERTICAL
-		if right_active:
+		elif right_active:
 			thrust_x += THRUST_HORIZONTAL
 			thrust_y += THRUST_VERTICAL
 
-		# Stratosphere ceiling attenuation (soft limit)
+		# Gentle power attenuation for upward ascent when approaching upper gameplay corridor (>220px above target)
 		var height_above_target: float = dy - py
-		if height_above_target > 350.0:
-			var excess_h: float = height_above_target - 350.0
-			var ceiling_attenuation: float = clampf(1.0 - (excess_h / 200.0), 0.2, 1.0)
+		if vy <= 0.0 and height_above_target > 220.0:
+			var excess_h: float = height_above_target - 220.0
+			var ceiling_attenuation: float = clampf(1.0 - (excess_h / 140.0), 0.35, 1.0)
 			thrust_y *= ceiling_attenuation
 
 		# Fuel burn
