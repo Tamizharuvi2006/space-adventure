@@ -261,7 +261,7 @@ func build_station_formation(pad: SolarPlatform, formation_type: FormationType =
 			_add_talus_scree(chunk_node, shelf_l - 25.0, shelf_r + 25.0, footing_y, base_rock)
 
 		FormationType.CLIFF_LEFT:
-			# ── 2. CLIFF SHELF — Pad carved into sheer rock wall, jutting over canyon chasm ─
+			# ── 2. CLIFF SHELF LEFT — Pad carved into left wall, drops into chasm on right ─
 			far_left = pos.x - half_w - 90.0
 			far_right = pos.x + half_w + 380.0
 			var shelf_l = pos.x - half_w - 18.0
@@ -288,6 +288,34 @@ func build_station_formation(pad: SolarPlatform, formation_type: FormationType =
 			_add_thermal_vent(chunk_node, shelf_r + 30.0, footing_y + 195.0)
 			_add_talus_scree(chunk_node, shelf_r + 60.0, shelf_r + 220.0, footing_y + 450.0, base_rock)
 			_add_chasm_monolith(chunk_node, pos.x + 380.0, footing_y - 45.0, base_rock, strata_col)
+
+		FormationType.CLIFF_RIGHT:
+			# ── 3. CLIFF SHELF RIGHT — Mirror: cliff wall towers on RIGHT, chasm drops on LEFT ─
+			far_left = pos.x - half_w - 380.0
+			far_right = pos.x + half_w + 90.0
+			var shelf_l2 = pos.x - half_w - 14.0
+			var shelf_r2 = pos.x + half_w + 18.0
+
+			surface_points = [
+				Vector2(far_left, footing_y + 600.0),          # Deep canyon gorge floor on left
+				Vector2(far_left + 120.0, footing_y + 560.0),
+				Vector2(far_left + 225.0, footing_y + 460.0),  # Canyon talus bench
+				Vector2(far_left + 310.0, footing_y + 340.0),
+				Vector2(shelf_l2 - 25.0, footing_y + 190.0),  # Sheer vertical canyon drop
+				Vector2(shelf_l2 - 12.0, footing_y + 55.0),
+				Vector2(shelf_l2, footing_y),                  # Sheer cantilever shelf edge!
+				Vector2(pos.x, footing_y + 1.0),
+				Vector2(shelf_r2, footing_y),                  # Pad shelf niche carved into right wall
+				Vector2(shelf_r2 + 22.0, footing_y - 18.0),
+				Vector2(far_right - 15.0, footing_y - 60.0),
+				Vector2(far_right + 15.0, footing_y - 110.0),
+				Vector2(far_right + 40.0, footing_y - 160.0),  # High cliff crest towering right
+			]
+			_build_faceted_rock_layers(chunk_node, surface_points, far_left, far_right + 40.0, abyss_depth_y, base_rock, strata_col)
+			_add_bedrock_anchor_system(chunk_node, pos.x, footing_y, half_w, base_rock)
+			_add_thermal_vent(chunk_node, shelf_l2 - 30.0, footing_y + 195.0)
+			_add_talus_scree(chunk_node, shelf_l2 - 220.0, shelf_l2 - 60.0, footing_y + 450.0, base_rock)
+			_add_chasm_monolith(chunk_node, pos.x - 380.0, footing_y - 45.0, base_rock, strata_col)
 
 		FormationType.MOUNTAIN_PEAK:
 			# ── 3. RIDGE CREST — Razor-sharp mountain ridge peak ────────────────────
@@ -337,28 +365,58 @@ func build_station_formation(pad: SolarPlatform, formation_type: FormationType =
 			_add_bedrock_anchor_system(chunk_node, pos.x, footing_y, half_w, base_rock)
 			_add_talus_scree(chunk_node, shelf_r + 30.0, shelf_r + 140.0, footing_y + 180.0, base_rock)
 
-		FormationType.VALLEY_SHELF, _:
-			# ── 5. VALLEY SHELF — Elevated rock bench inside a deep canyon basin ───
+		FormationType.VALLEY_SHELF:
+			# ── 5. VALLEY SHELF — Elevated bench with a flanking rock pinnacle and lower gorge ─
 			far_left = pos.x - half_w - 160.0
 			far_right = pos.x + half_w + 200.0
-			var shelf_l = pos.x - half_w - 18.0
-			var shelf_r = pos.x + half_w + 18.0
+			var shelf_l_vs = pos.x - half_w - 18.0
+			var shelf_r_vs = pos.x + half_w + 18.0
 
 			surface_points = [
 				Vector2(far_left, footing_y + 420.0),
 				Vector2(far_left + 45.0, footing_y + 240.0),
-				Vector2(shelf_l - 65.0, footing_y + 95.0),
-				Vector2(shelf_l, footing_y),                  # Valley shelf ledge
+				Vector2(shelf_l_vs - 65.0, footing_y + 95.0),
+				Vector2(shelf_l_vs, footing_y),                # Valley shelf ledge
 				Vector2(pos.x, footing_y + 2.0),
-				Vector2(shelf_r, footing_y),
-				Vector2(shelf_r + 30.0, footing_y + 45.0),
-				Vector2(shelf_r + 75.0, footing_y - 25.0),    # Flanking rock pinnacle
-				Vector2(shelf_r + 120.0, footing_y + 140.0),
+				Vector2(shelf_r_vs, footing_y),
+				Vector2(shelf_r_vs + 30.0, footing_y + 45.0),
+				Vector2(shelf_r_vs + 75.0, footing_y - 25.0),  # Flanking rock pinnacle
+				Vector2(shelf_r_vs + 120.0, footing_y + 140.0),
 				Vector2(far_right, footing_y + 420.0),
 			]
 			_build_faceted_rock_layers(chunk_node, surface_points, far_left, far_right, abyss_depth_y, base_rock, strata_col)
 			_add_bedrock_anchor_system(chunk_node, pos.x, footing_y, half_w, base_rock)
-			_add_talus_scree(chunk_node, shelf_l - 45.0, shelf_r + 45.0, footing_y, base_rock)
+			_add_talus_scree(chunk_node, shelf_l_vs - 45.0, shelf_r_vs + 45.0, footing_y, base_rock)
+
+		_:
+			# ── 6. MESA (default) — Wide flat-top butte, symmetric stepped sides ────────
+			far_left = pos.x - half_w - 240.0
+			far_right = pos.x + half_w + 240.0
+			var shelf_l_m = pos.x - half_w - 20.0
+			var shelf_r_m = pos.x + half_w + 20.0
+
+			surface_points = [
+				Vector2(far_left, footing_y + 480.0),
+				Vector2(far_left + 60.0, footing_y + 340.0),
+				Vector2(far_left + 110.0, footing_y + 240.0),
+				Vector2(shelf_l_m - 90.0, footing_y + 160.0),
+				Vector2(shelf_l_m - 45.0, footing_y + 70.0),
+				Vector2(shelf_l_m - 15.0, footing_y + 18.0),
+				Vector2(shelf_l_m, footing_y),
+				Vector2(pos.x - half_w * 0.4, footing_y + 2.0),
+				Vector2(pos.x, footing_y),
+				Vector2(pos.x + half_w * 0.4, footing_y + 2.0),
+				Vector2(shelf_r_m, footing_y),
+				Vector2(shelf_r_m + 15.0, footing_y + 18.0),
+				Vector2(shelf_r_m + 45.0, footing_y + 70.0),
+				Vector2(shelf_r_m + 90.0, footing_y + 160.0),
+				Vector2(far_right - 110.0, footing_y + 240.0),
+				Vector2(far_right - 60.0, footing_y + 340.0),
+				Vector2(far_right, footing_y + 480.0),
+			]
+			_build_faceted_rock_layers(chunk_node, surface_points, far_left, far_right, abyss_depth_y, base_rock, strata_col)
+			_add_bedrock_anchor_system(chunk_node, pos.x, footing_y, half_w, base_rock)
+			_add_talus_scree(chunk_node, shelf_l_m - 25.0, shelf_r_m + 25.0, footing_y, base_rock)
 
 # ─── Multi-Faceted Geological Layer Builder ──────────────────────────────────
 func _build_faceted_rock_layers(chunk: Node2D, surface_pts: PackedVector2Array, far_left: float, far_right: float, abyss_y: float, rock_col: Color, strata_col: Color) -> void:
@@ -545,8 +603,49 @@ func _add_talus_scree(chunk: Node2D, start_x: float, end_x: float, base_y: float
 func _add_cliff_face_cracks(_chunk: Node2D, _cliff_left: float, _shelf_l: float, _top_y: float, _shelf_y: float, _rock_col: Color) -> void:
 	pass
 
-func _add_crater_bowl_arcs(_chunk: Node2D, _rim_x: float, _far_x: float, _deck_y: float, _strata_col: Color) -> void:
-	pass
+func _add_crater_bowl_arcs(chunk: Node2D, rim_x: float, far_x: float, deck_y: float, strata_col: Color) -> void:
+	# Draw a visible curved stone arc rising from the crater bowl floor,
+	# suggesting the inner bowl shape of the crater rim pad.
+	var bowl_center_x = rim_x + (far_x - rim_x) * 0.45
+	var bowl_depth = 180.0
+	var bowl_width = (far_x - rim_x) * 0.7
+
+	# Left arc wall
+	var arc_left: PackedVector2Array = [
+		Vector2(rim_x + 30.0, deck_y),
+		Vector2(rim_x + 55.0, deck_y + 55.0),
+		Vector2(rim_x + 90.0, deck_y + 110.0),
+		Vector2(bowl_center_x - bowl_width * 0.35, deck_y + bowl_depth),
+		Vector2(bowl_center_x, deck_y + bowl_depth + 20.0),   # Bowl floor center
+		Vector2(bowl_center_x, deck_y + bowl_depth + 50.0),
+		Vector2(bowl_center_x - bowl_width * 0.35, deck_y + bowl_depth + 45.0),
+		Vector2(rim_x + 80.0, deck_y + 130.0),
+		Vector2(rim_x + 42.0, deck_y + 70.0),
+		Vector2(rim_x + 20.0, deck_y + 18.0),
+	]
+	var arc_l_poly = Polygon2D.new()
+	arc_l_poly.name = "CraterBowlArcL"
+	arc_l_poly.polygon = arc_left
+	arc_l_poly.color = Color(strata_col.r * 0.55, strata_col.g * 0.50, strata_col.b * 0.45, 0.72)
+	chunk.add_child(arc_l_poly)
+
+	# Right arc wall
+	var arc_right: PackedVector2Array = [
+		Vector2(bowl_center_x, deck_y + bowl_depth + 20.0),
+		Vector2(bowl_center_x + bowl_width * 0.35, deck_y + bowl_depth),
+		Vector2(far_x - 60.0, deck_y + 120.0),
+		Vector2(far_x - 30.0, deck_y + 60.0),
+		Vector2(far_x - 10.0, deck_y + 15.0),
+		Vector2(far_x - 15.0, deck_y + 40.0),
+		Vector2(far_x - 50.0, deck_y + 90.0),
+		Vector2(bowl_center_x + bowl_width * 0.35, deck_y + bowl_depth + 40.0),
+		Vector2(bowl_center_x, deck_y + bowl_depth + 50.0),
+	]
+	var arc_r_poly = Polygon2D.new()
+	arc_r_poly.name = "CraterBowlArcR"
+	arc_r_poly.polygon = arc_right
+	arc_r_poly.color = Color(strata_col.r * 0.45, strata_col.g * 0.42, strata_col.b * 0.38, 0.65)
+	chunk.add_child(arc_r_poly)
 
 # ─── Canyon Chasm Monolith (rises from deep canyon floor below flight path) ──
 func _add_chasm_monolith(chunk: Node2D, center_x: float, peak_y: float, rock_col: Color, _strata_col: Color) -> void:
@@ -699,7 +798,9 @@ func build_canyon_segment(pad_a: SolarPlatform, pad_b: SolarPlatform, motif: For
 
 	var dx = shelf_bl - start_x
 	var max_y = maxf(footing_ya, footing_yb)
-	var dip = clampf(dx * 0.12, 35.0, 95.0)
+	# Fix 4: Scale dip with gap distance so long glides show dramatically deeper gorges.
+	# Previously capped at 95px — now scales up to 220px for long milestone flights.
+	var dip = clampf(dx * 0.10, 55.0, 220.0)
 
 	var surface_points: PackedVector2Array = []
 	surface_points.append(Vector2(start_x, footing_ya))
@@ -707,34 +808,60 @@ func build_canyon_segment(pad_a: SolarPlatform, pad_b: SolarPlatform, motif: For
 
 	match motif:
 		FormationType.CLIFF_LEFT:
-			surface_points.append(Vector2(start_x + dx * 0.18, footing_ya + dip * 0.40))
-			surface_points.append(Vector2(start_x + dx * 0.35, max_y + dip * 0.85))
-			surface_points.append(Vector2(start_x + dx * 0.52, max_y + dip))
-			surface_points.append(Vector2(start_x + dx * 0.70, max_y + dip * 0.65))
-			surface_points.append(Vector2(shelf_bl - 65.0, footing_yb + 65.0))
-			surface_points.append(Vector2(shelf_bl - 25.0, footing_yb + 25.0))
+			# Terrain drops quickly on the left side then floors, sheer wall on left
+			surface_points.append(Vector2(start_x + dx * 0.12, footing_ya + dip * 0.60))
+			surface_points.append(Vector2(start_x + dx * 0.28, max_y + dip * 0.90))
+			surface_points.append(Vector2(start_x + dx * 0.50, max_y + dip))          # Deep floor left-biased
+			surface_points.append(Vector2(start_x + dx * 0.68, max_y + dip * 0.75))
+			surface_points.append(Vector2(shelf_bl - 70.0, footing_yb + 80.0))
+			surface_points.append(Vector2(shelf_bl - 28.0, footing_yb + 28.0))
+
+		FormationType.CLIFF_RIGHT:
+			# Mirror: sheer wall on right, terrain floors right-biased
+			surface_points.append(Vector2(start_x + dx * 0.22, footing_ya + dip * 0.45))
+			surface_points.append(Vector2(start_x + dx * 0.45, max_y + dip * 0.80))
+			surface_points.append(Vector2(start_x + dx * 0.62, max_y + dip))          # Deep floor right-biased
+			surface_points.append(Vector2(start_x + dx * 0.78, max_y + dip * 0.55))
+			surface_points.append(Vector2(shelf_bl - 50.0, footing_yb + 60.0))
+			surface_points.append(Vector2(shelf_bl - 22.0, footing_yb + 22.0))
 
 		FormationType.MOUNTAIN_PEAK:
-			surface_points.append(Vector2(start_x + dx * 0.20, footing_ya + dip * 0.35))
-			surface_points.append(Vector2(start_x + dx * 0.45, max_y + dip * 0.75))
-			surface_points.append(Vector2(start_x + dx * 0.65, max_y + dip * 0.50))
-			surface_points.append(Vector2(shelf_bl - 65.0, footing_yb + 55.0))
-			surface_points.append(Vector2(shelf_bl - 25.0, footing_yb + 20.0))
+			# Terrain rises to a narrow ridge crest in the middle — steep both sides
+			var ridge_y = minf(footing_ya, footing_yb) - dip * 0.45  # Ridge ABOVE both pads
+			surface_points.append(Vector2(start_x + dx * 0.18, footing_ya + dip * 0.20))
+			surface_points.append(Vector2(start_x + dx * 0.38, ridge_y + dip * 0.30))
+			surface_points.append(Vector2(start_x + dx * 0.50, ridge_y))              # Narrow ridge crest
+			surface_points.append(Vector2(start_x + dx * 0.62, ridge_y + dip * 0.30))
+			surface_points.append(Vector2(shelf_bl - 55.0, footing_yb + 55.0))
+			surface_points.append(Vector2(shelf_bl - 22.0, footing_yb + 20.0))
 
 		FormationType.CRATER_RIM:
-			surface_points.append(Vector2(start_x + dx * 0.22, footing_ya + dip * 0.30))
-			surface_points.append(Vector2(start_x + dx * 0.50, max_y + dip * 0.80))
+			# Wide shallow bowl — slow sweep down, broad floor, slow sweep up
+			surface_points.append(Vector2(start_x + dx * 0.15, footing_ya + dip * 0.20))
+			surface_points.append(Vector2(start_x + dx * 0.32, max_y + dip * 0.65))
+			surface_points.append(Vector2(start_x + dx * 0.45, max_y + dip * 0.88))  # Broad bowl floor left
+			surface_points.append(Vector2(start_x + dx * 0.55, max_y + dip * 0.88))  # Broad bowl floor right
 			surface_points.append(Vector2(start_x + dx * 0.70, max_y + dip * 0.60))
-			surface_points.append(Vector2(shelf_bl - 50.0, footing_yb + 40.0))
-			surface_points.append(Vector2(shelf_bl - 20.0, footing_yb + 15.0))
+			surface_points.append(Vector2(shelf_bl - 45.0, footing_yb + 40.0))
+			surface_points.append(Vector2(shelf_bl - 18.0, footing_yb + 14.0))
 
-		_: # MESA, VALLEY_SHELF
-			surface_points.append(Vector2(start_x + dx * 0.18, footing_ya + dip * 0.30))
-			surface_points.append(Vector2(start_x + dx * 0.35, max_y + dip * 0.65))
-			surface_points.append(Vector2(start_x + dx * 0.52, max_y + dip * 0.85))
-			surface_points.append(Vector2(start_x + dx * 0.72, max_y + dip * 0.55))
-			surface_points.append(Vector2(shelf_bl - 55.0, footing_yb + 45.0))
-			surface_points.append(Vector2(shelf_bl - 20.0, footing_yb + 18.0))
+		FormationType.VALLEY_SHELF:
+			# Sharp V-gorge — steep drop, narrow floor, steep climb. Most dramatic shape.
+			surface_points.append(Vector2(start_x + dx * 0.22, footing_ya + dip * 0.55))
+			surface_points.append(Vector2(start_x + dx * 0.38, max_y + dip * 0.92))
+			surface_points.append(Vector2(start_x + dx * 0.48, max_y + dip))          # V-gorge tight floor
+			surface_points.append(Vector2(start_x + dx * 0.52, max_y + dip))          # Narrow floor width
+			surface_points.append(Vector2(start_x + dx * 0.65, max_y + dip * 0.88))
+			surface_points.append(Vector2(shelf_bl - 60.0, footing_yb + 55.0))
+			surface_points.append(Vector2(shelf_bl - 24.0, footing_yb + 22.0))
+
+		_: # MESA (default) — Flat plateau, terrain stays high, gentle dip in middle
+			surface_points.append(Vector2(start_x + dx * 0.16, footing_ya + dip * 0.15))
+			surface_points.append(Vector2(start_x + dx * 0.30, max_y + dip * 0.40))  # Shallow dip only
+			surface_points.append(Vector2(start_x + dx * 0.50, max_y + dip * 0.50))  # Stays high
+			surface_points.append(Vector2(start_x + dx * 0.70, max_y + dip * 0.38))
+			surface_points.append(Vector2(shelf_bl - 50.0, footing_yb + 38.0))
+			surface_points.append(Vector2(shelf_bl - 18.0, footing_yb + 14.0))
 
 	surface_points.append(Vector2(shelf_bl, footing_yb))
 	surface_points.append(Vector2(pos_b.x, footing_yb + 1.0))
