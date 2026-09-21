@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/background.tscn" id="2_bg"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://scripts/camera_follow.gd" id="6_cam"]
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="7_hud"]
 [ext_resource type="Script" path="res://scripts/sound_manager.gd" id="8_sound"]
+[ext_resource type="Script" path="res://scripts/music_manager.gd" id="9_music"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -29,3 +30,6 @@ script = ExtResource("6_cam")
 
 [node name="SoundManager" type="Node" parent="."]
 script = ExtResource("8_sound")
+
+[node name="MusicManager" type="Node" parent="."]
+script = ExtResource("9_music")

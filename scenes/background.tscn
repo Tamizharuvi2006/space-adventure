@@ -1,19 +1,18 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Shader" path="res://shaders/solar_sky.gdshader" id="1_sky_shader"]
 [ext_resource type="Script" path="res://scripts/background.gd" id="2_bg_script"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_sky"]
 shader = ExtResource("1_sky_shader")
-shader_parameter/top_color = Color(0.04, 0.03, 0.08, 1)
-shader_parameter/mid_color = Color(0.24, 0.08, 0.06, 1)
+shader_parameter/sky_color = Color(0.04, 0.03, 0.08, 1)
+shader_parameter/horizon_color = Color(0.24, 0.08, 0.06, 1)
 shader_parameter/bottom_color = Color(0.55, 0.22, 0.08, 1)
 shader_parameter/sun_color = Color(1, 0.78, 0.35, 1)
 shader_parameter/sun_pos = Vector2(0.52, 0.15)
 shader_parameter/sun_radius = 0.13
-
-[sub_resource type="Gradient" id="Gradient_dust"]
-colors = PackedColorArray(1, 0.8, 0.3, 0.6, 1, 0.35, 0.1, 0)
+shader_parameter/haze_intensity = 0.28
+shader_parameter/aspect_ratio = 1.77777778
 
 [node name="Background" type="ParallaxBackground"]
 layer = -10
@@ -22,11 +21,33 @@ script = ExtResource("2_bg_script")
 [node name="SkyLayer" type="ParallaxLayer" parent="."]
 motion_scale = Vector2(0, 0)
 
+[node name="BaseSkyRect" type="ColorRect" parent="SkyLayer"]
+offset_right = 4096.0
+offset_bottom = 2048.0
+color = Color(0.04, 0.03, 0.08, 1)
+mouse_filter = 2
+
 [node name="SkyRect" type="ColorRect" parent="SkyLayer"]
 material = SubResource("ShaderMaterial_sky")
-offset_right = 1280.0
-offset_bottom = 720.0
+offset_right = 4096.0
+offset_bottom = 2048.0
 mouse_filter = 2
+
+[node name="FarRidgeLayer" type="ParallaxLayer" parent="."]
+motion_scale = Vector2(0.08, 0.06)
+motion_mirroring = Vector2(2560, 0)
+
+[node name="FarRidgePolygon" type="Polygon2D" parent="FarRidgeLayer"]
+color = Color(0.10, 0.04, 0.03, 0.55)
+polygon = PackedVector2Array(0, 400, 200, 375, 420, 355, 640, 370, 860, 345, 1080, 360, 1300, 340, 1520, 358, 1740, 342, 1960, 365, 2180, 348, 2400, 360, 2560, 375, 2560, 3600, 0, 3600)
+
+[node name="LandmarkLayer" type="ParallaxLayer" parent="."]
+motion_scale = Vector2(0.12, 0.08)
+motion_mirroring = Vector2(2560, 0)
+
+[node name="NeedlePillarLayer" type="ParallaxLayer" parent="."]
+motion_scale = Vector2(0.15, 0.10)
+motion_mirroring = Vector2(2560, 0)
 
 [node name="DistantRidgeLayer" type="ParallaxLayer" parent="."]
 motion_scale = Vector2(0.20, 0.25)
@@ -44,6 +65,10 @@ motion_mirroring = Vector2(2560, 0)
 color = Color(0.12, 0.05, 0.04, 0.90)
 polygon = PackedVector2Array(0, 480, 180, 420, 380, 470, 580, 390, 780, 450, 980, 380, 1200, 440, 1420, 370, 1640, 430, 1860, 380, 2080, 440, 2300, 410, 2560, 480, 2560, 3600, 0, 3600)
 
+[node name="CloseFgLayer" type="ParallaxLayer" parent="."]
+motion_scale = Vector2(0.68, 0.50)
+motion_mirroring = Vector2(2560, 0)
+
 [node name="ForegroundLayer" type="ParallaxLayer" parent="."]
 visible = false
 motion_scale = Vector2(0.55, 0)
@@ -52,22 +77,3 @@ motion_mirroring = Vector2(2560, 0)
 [node name="FgPolygon" type="Polygon2D" parent="ForegroundLayer"]
 color = Color(0.18, 0.08, 0.05, 0.95)
 polygon = PackedVector2Array(0, 540, 160, 490, 340, 530, 520, 470, 700, 520, 880, 480, 1060, 530, 1240, 480, 1440, 540, 1640, 490, 1840, 530, 2040, 480, 2240, 530, 2420, 490, 2560, 540, 2560, 1200, 0, 1200)
-
-[node name="SolarWindLayer" type="ParallaxLayer" parent="."]
-motion_scale = Vector2(0.35, 0.35)
-
-[node name="SolarDust" type="CPUParticles2D" parent="SolarWindLayer"]
-position = Vector2(640, 360)
-amount = 40
-lifetime = 6.0
-preprocess = 3.0
-emission_shape = 3
-emission_rect_extents = Vector2(700, 400)
-direction = Vector2(-1, 0.1)
-spread = 20.0
-gravity = Vector2(0, 0)
-initial_velocity_min = 20.0
-initial_velocity_max = 50.0
-scale_amount_min = 2.0
-scale_amount_max = 4.0
-color_ramp = SubResource("Gradient_dust")

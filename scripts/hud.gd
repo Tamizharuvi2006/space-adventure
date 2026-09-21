@@ -26,6 +26,7 @@ signal home_game_requested
 @onready var destination_badge: PanelContainer = $GameplayHUD/TopMarginContainer/TopBar/CenterCluster/DestinationBadge
 @onready var fuel_bar: ProgressBar = $GameplayHUD/TopMarginContainer/TopBar/CenterCluster/FuelBarContainer/FuelBar
 @onready var fuel_status_label: Label = $GameplayHUD/TopMarginContainer/TopBar/CenterCluster/FuelBarContainer/FuelStatusLabel
+@onready var fuel_droplets: Control = $GameplayHUD/TopMarginContainer/TopBar/CenterCluster/FuelBarContainer/FuelDroplets
 @onready var pause_button: Button = $GameplayHUD/TopMarginContainer/TopBar/PauseButton
 @onready var alert_label: Label = $GameplayHUD/CenterAlert/AlertLabel
 @onready var alert_container: Control = $GameplayHUD/CenterAlert
@@ -46,6 +47,7 @@ var indicator_label: Label = null
 @onready var resume_button: Button = $PauseMenu/VBox/ResumeButton
 @onready var pause_retry_button: Button = $PauseMenu/VBox/PauseRetryButton
 @onready var pause_home_button: Button = $PauseMenu/VBox/PauseHomeButton
+@onready var music_slider: HSlider = $PauseMenu/VBox/MusicVolumeRow/MusicSlider
 
 # Game over components
 @onready var final_alt_label: Label = $GameOverMenu/VBox/FinalAltitudeLabel
@@ -61,7 +63,8 @@ var tracked_target_platform: Node2D = null
 var is_debug_mode: bool = false
 var tracked_world_gen: WorldGenerator = null
 
-# Robust Multi-Touch Tracking (Left 50% vs Right 50% screen regions)
+# Robust Multi-Touch Tracking (Per-finger independent touch zones)
+var touch_sides: Dictionary = {} # event.index -> "left" | "right"
 var left_touch_fingers: Dictionary = {}
 var right_touch_fingers: Dictionary = {}
 var touch_steer_l: bool = false
@@ -86,15 +89,19 @@ func _ready() -> void:
 	pause_home_button.pressed.connect(func(): _play_ui_click(); emit_signal("home_game_requested"))
 	game_over_retry_button.pressed.connect(func(): _play_ui_click(); emit_signal("retry_game_requested"))
 	game_over_home_button.pressed.connect(func(): _play_ui_click(); emit_signal("home_game_requested"))
+
+	# Music volume slider — connects to main.gd via SceneTree lookup
+	if music_slider:
+		music_slider.value_changed.connect(_on_music_slider_changed)
 	
 	alert_container.modulate.a = 0.0
 	_ensure_offscreen_indicator()
 	if offscreen_indicator:
 		offscreen_indicator.modulate.a = 0.0
 	if altitude_tag:
-		altitude_tag.text = "☀️ SUN JOURNEY"
+		altitude_tag.text = "SUN JOURNEY"
 	if best_tag:
-		best_tag.text = "BEST PAD"
+		best_tag.text = "BEST"
 		
 	# Duplicate fuel fill stylebox so color modifications are local
 	if fuel_bar:
@@ -103,35 +110,75 @@ func _ready() -> void:
 			fuel_bar_fill_style = fill.duplicate()
 			fuel_bar.add_theme_stylebox_override("fill", fuel_bar_fill_style)
 			
+	# Bottom touch zone feedback (clean screen: invisible at rest, subtle illumination when active)
+	if bottom_margin_container:
+		bottom_margin_container.visible = true
+	if left_indicator:
+		left_indicator.visible = true
+		left_indicator.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	if right_indicator:
+		right_indicator.visible = true
+		right_indicator.modulate = Color(1.0, 1.0, 1.0, 0.0)
+		
+	# Setup clean pause button feedback animation
+	_setup_pause_button()
+	
 	# Update safe area dynamically
 	_update_safe_margins()
 	get_viewport().size_changed.connect(_update_safe_margins)
 
+func _setup_pause_button() -> void:
+	if not pause_button:
+		return
+	pause_button.pivot_offset = pause_button.size * 0.5
+	pause_button.resized.connect(func():
+		pause_button.pivot_offset = pause_button.size * 0.5
+	)
+	var icon = pause_button.get_node_or_null("PauseIcon")
+	pause_button.button_down.connect(func():
+		if icon and icon.has_method("set_icon_color"):
+			icon.set_icon_color(Color(1.0, 1.0, 1.0, 1.0))
+		var tw = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(pause_button, "scale", Vector2(0.95, 0.95), 0.04)
+	)
+	pause_button.button_up.connect(func():
+		if icon and icon.has_method("set_icon_color"):
+			icon.set_icon_color(Color(0.92, 0.95, 0.98, 0.90))
+		var tw = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(pause_button, "scale", Vector2(1.0, 1.0), 0.07)
+	)
+	pause_button.mouse_entered.connect(func():
+		if icon and icon.has_method("set_icon_color"):
+			icon.set_icon_color(Color(1.0, 1.0, 1.0, 0.96))
+	)
+	pause_button.mouse_exited.connect(func():
+		if icon and icon.has_method("set_icon_color"):
+			icon.set_icon_color(Color(0.92, 0.95, 0.98, 0.90))
+	)
+
 func _update_safe_margins() -> void:
 	if not is_inside_tree():
 		return
-		
-	var safe_rect = DisplayServer.get_display_safe_area()
-	var win_size = DisplayServer.window_get_size()
-	var vp_size = get_viewport().get_visible_rect().size
-	
-	var scale_x = vp_size.x / maxf(float(win_size.x), 1.0)
-	var scale_y = vp_size.y / maxf(float(win_size.y), 1.0)
-	
-	var margin_l = maxf(safe_rect.position.x * scale_x, 28.0)
-	var margin_r = maxf((win_size.x - (safe_rect.position.x + safe_rect.size.x)) * scale_x, 28.0)
-	var margin_t = maxf(safe_rect.position.y * scale_y, 16.0)
-	var margin_b = maxf((win_size.y - (safe_rect.position.y + safe_rect.size.y)) * scale_y, 20.0)
+
+	var margin_l: int = 28
+	var margin_r: int = 28
+	var margin_t: int = 16
+
+	if OS.has_feature("mobile"):
+		var vp_size = get_viewport().get_visible_rect().size
+		var safe_rect = DisplayServer.get_display_safe_area()
+		var win_size = DisplayServer.window_get_size()
+		if win_size.x > 0 and win_size.y > 0:
+			var scale_x = vp_size.x / float(win_size.x)
+			var scale_y = vp_size.y / float(win_size.y)
+			margin_l = int(maxf(safe_rect.position.x * scale_x, 28.0))
+			margin_r = int(maxf((win_size.x - (safe_rect.position.x + safe_rect.size.x)) * scale_x, 28.0))
+			margin_t = int(maxf(safe_rect.position.y * scale_y, 16.0))
 	
 	if top_margin_container:
-		top_margin_container.add_theme_constant_override("margin_left", int(margin_l))
-		top_margin_container.add_theme_constant_override("margin_right", int(margin_r))
-		top_margin_container.add_theme_constant_override("margin_top", int(margin_t))
-		
-	if bottom_margin_container:
-		bottom_margin_container.add_theme_constant_override("margin_left", int(margin_l))
-		bottom_margin_container.add_theme_constant_override("margin_right", int(margin_r))
-		bottom_margin_container.add_theme_constant_override("margin_bottom", int(margin_b))
+		top_margin_container.add_theme_constant_override("margin_left", margin_l)
+		top_margin_container.add_theme_constant_override("margin_right", margin_r)
+		top_margin_container.add_theme_constant_override("margin_top", margin_t)
 
 func bind_player(player: SolarPlayer) -> void:
 	target_player = player
@@ -178,13 +225,29 @@ func _ensure_offscreen_indicator() -> void:
 		if gameplay_hud:
 			gameplay_hud.add_child(offscreen_indicator)
 
+func _on_music_slider_changed(value: float) -> void:
+	# Notify main.gd (root scene) so it can update MusicManager + save
+	var main = get_tree().current_scene
+	if main and main.has_method("on_music_volume_changed"):
+		main.on_music_volume_changed(value)
+
+func set_music_slider_value(pct: float) -> void:
+	if music_slider:
+		music_slider.set_value_no_signal(clampf(pct, 0.0, 100.0))
+
 func _sync_thrusters() -> void:
-	touch_steer_l = not left_touch_fingers.is_empty()
-	touch_steer_r = not right_touch_fingers.is_empty()
+	touch_steer_l = false
+	touch_steer_r = false
+	for side in touch_sides.values():
+		if side == "left":
+			touch_steer_l = true
+		elif side == "right":
+			touch_steer_r = true
 	if target_player:
 		target_player.set_mobile_inputs(touch_steer_l, touch_steer_r)
 
 func clear_touch_inputs() -> void:
+	touch_sides.clear()
 	left_touch_fingers.clear()
 	right_touch_fingers.clear()
 	_sync_thrusters()
@@ -218,48 +281,47 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not gameplay_hud.visible or pause_menu.visible or game_over_menu.visible or main_menu.visible:
 		return
 
+	# Exclude Pause button touches from gameplay steering/thrust
+	if (event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event is InputEventMouseMotion):
+		if pause_button and pause_button.visible and pause_button.get_global_rect().grow(12.0).has_point(event.position):
+			return
+
 	var vp_width = get_viewport().get_visible_rect().size.x
 
-	# Multi-touch handling
+	# Multi-touch handling: track each finger independently by event.index
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			if event.position.x < vp_width * 0.5:
-				left_touch_fingers[event.index] = true
+				touch_sides[event.index] = "left"
 			else:
-				right_touch_fingers[event.index] = true
+				touch_sides[event.index] = "right"
 		else:
-			left_touch_fingers.erase(event.index)
-			right_touch_fingers.erase(event.index)
+			touch_sides.erase(event.index)
 		_sync_thrusters()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventScreenDrag:
-		left_touch_fingers.erase(event.index)
-		right_touch_fingers.erase(event.index)
 		if event.position.x < vp_width * 0.5:
-			left_touch_fingers[event.index] = true
+			touch_sides[event.index] = "left"
 		else:
-			right_touch_fingers[event.index] = true
+			touch_sides[event.index] = "right"
 		_sync_thrusters()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
 				if event.position.x < vp_width * 0.5:
-					left_touch_fingers[-1] = true
+					touch_sides[-1] = "left"
 				else:
-					right_touch_fingers[-1] = true
+					touch_sides[-1] = "right"
 			else:
-				left_touch_fingers.erase(-1)
-				right_touch_fingers.erase(-1)
+				touch_sides.erase(-1)
 			_sync_thrusters()
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
-		left_touch_fingers.erase(-1)
-		right_touch_fingers.erase(-1)
 		if event.position.x < vp_width * 0.5:
-			left_touch_fingers[-1] = true
+			touch_sides[-1] = "left"
 		else:
-			right_touch_fingers[-1] = true
+			touch_sides[-1] = "right"
 		_sync_thrusters()
 		get_viewport().set_input_as_handled()
 
@@ -267,37 +329,12 @@ func _process(delta: float) -> void:
 	if not gameplay_hud.visible:
 		return
 		
-	# 1. Smooth fuel bar animation & 4-State Visual Feedback
+	# 1. Smooth Fuel Droplets Animation & Fuel Level Tracking
+	if fuel_droplets:
+		fuel_droplets.set_fuel_ratio(current_fuel_ratio)
 	if fuel_bar:
 		var target_val = current_fuel_ratio * 100.0
 		fuel_bar.value = lerpf(fuel_bar.value, target_val, 14.0 * delta)
-		
-		# 4 States: 100-40% normal, 40-20% amber warning, 20-0% critical red, 0% BOOST EMPTY
-		if current_fuel_ratio > 0.40:
-			if fuel_bar_fill_style:
-				fuel_bar_fill_style.bg_color = Color(0.12, 0.85, 1.0, 1.0)
-			if fuel_status_label:
-				fuel_status_label.text = ""
-		elif current_fuel_ratio > 0.20:
-			var pulse_amber = 0.85 + sin(Time.get_ticks_msec() * 0.009) * 0.15
-			if fuel_bar_fill_style:
-				fuel_bar_fill_style.bg_color = Color(1.0, 0.72, 0.15, pulse_amber)
-			if fuel_status_label:
-				fuel_status_label.text = "LOW FUEL"
-				fuel_status_label.modulate = Color(1.0, 0.75, 0.2, 0.9)
-		elif current_fuel_ratio > 0.0:
-			var pulse_red = 0.75 + sin(Time.get_ticks_msec() * 0.016) * 0.25
-			if fuel_bar_fill_style:
-				fuel_bar_fill_style.bg_color = Color(1.0, 0.25, 0.25, pulse_red)
-			if fuel_status_label:
-				fuel_status_label.text = "CRITICAL FUEL"
-				fuel_status_label.modulate = Color(1.0, 0.3, 0.3, pulse_red)
-		else:
-			if fuel_bar_fill_style:
-				fuel_bar_fill_style.bg_color = Color(0.25, 0.28, 0.35, 0.4)
-			if fuel_status_label:
-				fuel_status_label.text = "BOOST EMPTY"
-				fuel_status_label.modulate = Color(1.0, 0.35, 0.35, 1.0)
 		
 	# 2. Side Indicators visual feedback (resting ~0.25 alpha, glowing when active)
 	var key_l = Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT)
@@ -308,37 +345,48 @@ func _process(delta: float) -> void:
 	var is_right_firing = (touch_steer_r or key_r or key_space) and current_fuel_ratio > 0.0
 	
 	if left_indicator:
-		if is_left_firing:
-			left_indicator.modulate = Color(0.2, 0.95, 1.0, 0.95)
-			left_indicator.scale = left_indicator.scale.lerp(Vector2(1.08, 1.08), 16.0 * delta)
-		else:
-			left_indicator.modulate = Color(1.0, 1.0, 1.0, 0.28)
-			left_indicator.scale = left_indicator.scale.lerp(Vector2.ONE, 16.0 * delta)
+		var target_l_col = Color(0.35, 0.92, 1.0, 0.65) if is_left_firing else Color(1.0, 1.0, 1.0, 0.0)
+		left_indicator.modulate = left_indicator.modulate.lerp(target_l_col, 16.0 * delta)
+		var target_scale_l = Vector2(1.10, 1.10) if is_left_firing else Vector2.ONE
+		left_indicator.scale = left_indicator.scale.lerp(target_scale_l, 16.0 * delta)
 			
 	if right_indicator:
-		if is_right_firing:
-			right_indicator.modulate = Color(0.2, 0.95, 1.0, 0.95)
-			right_indicator.scale = right_indicator.scale.lerp(Vector2(1.08, 1.08), 16.0 * delta)
-		else:
-			right_indicator.modulate = Color(1.0, 1.0, 1.0, 0.28)
-			right_indicator.scale = right_indicator.scale.lerp(Vector2.ONE, 16.0 * delta)
+		var target_r_col = Color(0.35, 0.92, 1.0, 0.65) if is_right_firing else Color(1.0, 1.0, 1.0, 0.0)
+		right_indicator.modulate = right_indicator.modulate.lerp(target_r_col, 16.0 * delta)
+		var target_scale_r = Vector2(1.10, 1.10) if is_right_firing else Vector2.ONE
+		right_indicator.scale = right_indicator.scale.lerp(target_scale_r, 16.0 * delta)
 
 	# 3. Emergency next-platform off-screen indicator
 	_update_offscreen_indicator(delta)
 
 	# 4. Debug telemetry (F3)
 	if debug_panel and debug_panel.visible and target_player and gameplay_hud.visible:
-		var py = target_player.global_position.y
 		var pvy = target_player.velocity.y
 		var pvx = target_player.velocity.x
-		var ty = tracked_target_platform.global_position.y if is_instance_valid(tracked_target_platform) else 0.0
-		var dy = ty - py
-		var dx = (tracked_target_platform.global_position.x - target_player.global_position.x) if is_instance_valid(tracked_target_platform) else 0.0
+		var touch_mode = "NONE"
+		if touch_steer_l and touch_steer_r:
+			touch_mode = "BOTH"
+		elif touch_steer_l:
+			touch_mode = "LEFT"
+		elif touch_steer_r:
+			touch_mode = "RIGHT"
+			
+		var flight_state = "DOCKED"
+		if target_player.current_state == SolarPlayer.State.FLYING:
+			flight_state = "ASCENDING" if pvy < 0.0 else "DESCENDING"
+			
 		var curr_idx = target_player.last_docked_platform.platform_index if is_instance_valid(target_player.last_docked_platform) else 0
 		var next_idx = tracked_target_platform.platform_index if is_instance_valid(tracked_target_platform) else 1
 		
-		debug_label.text = "TELEMETRY [F3]\nPlayer: (%.0f, %.0f) | Vel: (%.0f, %.0f)\nTarget Y: %.0f | ΔY: %.0f | ΔX: %.0f\nPad #%02d → Next: #%02d\nThrusters: L=%s R=%s" % [
-			target_player.global_position.x, py, pvx, pvy, ty, dy, dx, curr_idx, next_idx, is_left_firing, is_right_firing
+		debug_label.text = "TELEMETRY [F3]\nTOUCH: L=%s R=%s | MODE=%s\nTHRUST: V=%.0f H=%.0f\nSTATE: %s | Vel: (%.0f, %.0f)\nPad #%02d → Next: #%02d" % [
+			"ON" if touch_steer_l else "OFF",
+			"ON" if touch_steer_r else "OFF",
+			touch_mode,
+			target_player.telemetry_thrust_y,
+			target_player.telemetry_thrust_x,
+			flight_state,
+			pvx, pvy,
+			curr_idx, next_idx
 		]
 
 func _update_offscreen_indicator(delta: float) -> void:
@@ -472,42 +520,71 @@ func hide_game_over() -> void:
 var progress_tween: Tween = null
 
 func update_progress(current_pad_count: int, total_pads: int, best_pad_count: int) -> void:
+	var clamped_pad = clampi(current_pad_count, 1, total_pads)
+	var clamped_best = clampi(best_pad_count, 0, total_pads)
 	if altitude_label:
-		altitude_label.text = "%d / %d" % [current_pad_count, total_pads]
+		altitude_label.text = "%d / %d" % [clamped_pad, total_pads]
 		if progress_tween and progress_tween.is_valid():
 			progress_tween.kill()
 		altitude_label.scale = Vector2(1.12, 1.12)
 		progress_tween = create_tween()
 		progress_tween.tween_property(altitude_label, "scale", Vector2.ONE, 0.15)
 	if best_label:
-		best_label.text = "PAD %d" % best_pad_count
+		best_label.text = "PAD %d" % clamped_best
 
 func update_zone_name(zone_name: String) -> void:
 	if destination_label:
-		destination_label.text = "  ☀️ %s  " % zone_name
+		destination_label.text = "  %s  " % zone_name.to_upper()
 
+var fuel_refill_tween: Tween = null
+
+func animate_fuel_refill() -> void:
+	current_fuel_ratio = 1.0
+	if fuel_droplets:
+		fuel_droplets.animate_refill(0.50)
+	if fuel_bar:
+		if fuel_refill_tween and fuel_refill_tween.is_valid():
+			fuel_refill_tween.kill()
+		fuel_refill_tween = create_tween()
+		fuel_refill_tween.tween_property(fuel_bar, "value", 100.0, 0.40).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	if fuel_status_label:
+		fuel_status_label.text = ""
+
+const ZONE_BANNER_BASE_TOP: float = 108.0
 var banner_tween: Tween = null
 
 func show_zone_arrival_banner(zone: Dictionary) -> void:
 	if not planet_arrival_card:
 		return
 		
-	arrival_icon.text = zone.get("icon", "☀️")
-	arrival_title.text = zone.get("name", "NEW ZONE")
-	arrival_sub.text = zone.get("subtitle", "")
+	if arrival_icon:
+		arrival_icon.visible = false
+		arrival_icon.text = ""
+	if arrival_title:
+		arrival_title.text = zone.get("name", "NEW ZONE").to_upper()
+	if arrival_sub:
+		arrival_sub.text = zone.get("subtitle", "").to_upper()
 	
 	if banner_tween and banner_tween.is_valid():
 		banner_tween.kill()
 		
-	planet_arrival_card.scale = Vector2(0.85, 0.85)
+	# Start slightly lower than base top (slide in from below)
+	planet_arrival_card.scale = Vector2.ONE
+	planet_arrival_card.offset_top = ZONE_BANNER_BASE_TOP + 12.0
+	planet_arrival_card.offset_bottom = ZONE_BANNER_BASE_TOP + 12.0 + 64.0
 	planet_arrival_card.modulate.a = 0.0
 	
 	banner_tween = create_tween()
 	banner_tween.set_parallel(true)
-	banner_tween.tween_property(planet_arrival_card, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	banner_tween.tween_property(planet_arrival_card, "modulate:a", 1.0, 0.25)
-	banner_tween.chain().tween_interval(2.2)
-	banner_tween.chain().tween_property(planet_arrival_card, "modulate:a", 0.0, 0.5)
+	# Slide smoothly upward into rest position
+	banner_tween.tween_property(planet_arrival_card, "offset_top", ZONE_BANNER_BASE_TOP, 0.32).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	banner_tween.tween_property(planet_arrival_card, "offset_bottom", ZONE_BANNER_BASE_TOP + 64.0, 0.32).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	# Fade in cleanly
+	banner_tween.tween_property(planet_arrival_card, "modulate:a", 1.0, 0.28)
+	# Hold for 1.3 seconds
+	banner_tween.chain().tween_interval(1.3)
+	# Smooth fade out over 0.45 seconds
+	banner_tween.chain().tween_property(planet_arrival_card, "modulate:a", 0.0, 0.45)
 
 # Legacy compatibility
 func show_planet_arrival_banner(planet: Dictionary) -> void:
@@ -517,41 +594,39 @@ func show_journey_complete(current_pad_count: int, total_pads: int) -> void:
 	if not planet_arrival_card:
 		return
 		
-	arrival_icon.text = "🌞"
-	arrival_title.text = "SUN JOURNEY COMPLETE"
-	arrival_sub.text = "%d / %d — SUN MASTERED" % [current_pad_count, total_pads]
+	var clamped_pad = clampi(current_pad_count, 1, total_pads)
+	if arrival_icon:
+		arrival_icon.visible = false
+		arrival_icon.text = ""
+	if arrival_title:
+		arrival_title.text = "SUN JOURNEY COMPLETE"
+	if arrival_sub:
+		arrival_sub.text = "%d / %d — SUN MASTERED" % [clamped_pad, total_pads]
 	
 	if banner_tween and banner_tween.is_valid():
 		banner_tween.kill()
 		
-	planet_arrival_card.scale = Vector2(0.80, 0.80)
+	planet_arrival_card.scale = Vector2.ONE
+	planet_arrival_card.offset_top = ZONE_BANNER_BASE_TOP + 12.0
+	planet_arrival_card.offset_bottom = ZONE_BANNER_BASE_TOP + 12.0 + 64.0
 	planet_arrival_card.modulate.a = 0.0
 	
 	banner_tween = create_tween()
 	banner_tween.set_parallel(true)
-	banner_tween.tween_property(planet_arrival_card, "scale", Vector2(1.05, 1.05), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	banner_tween.tween_property(planet_arrival_card, "modulate:a", 1.0, 0.35)
-	banner_tween.chain().tween_interval(4.0)
+	banner_tween.tween_property(planet_arrival_card, "offset_top", ZONE_BANNER_BASE_TOP, 0.38).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	banner_tween.tween_property(planet_arrival_card, "offset_bottom", ZONE_BANNER_BASE_TOP + 64.0, 0.38).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	banner_tween.tween_property(planet_arrival_card, "modulate:a", 1.0, 0.32)
+	banner_tween.chain().tween_interval(3.0)
 	banner_tween.chain().tween_property(planet_arrival_card, "modulate:a", 0.0, 0.6)
 
 var alert_tween: Tween = null
 
-func show_landing_alert(text: String, is_perfect: bool) -> void:
-	if not alert_container:
-		return
-	if alert_label:
-		alert_label.text = text
-		alert_label.modulate = Color(0.2, 1.0, 0.8) if is_perfect else Color(0.3, 0.9, 1.0)
-		
-	if alert_tween and alert_tween.is_valid():
-		alert_tween.kill()
-		
-	alert_container.modulate.a = 1.0
-	alert_container.scale = Vector2(1.15, 1.15)
-	
-	alert_tween = create_tween()
-	alert_tween.tween_property(alert_container, "scale", Vector2.ONE, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	alert_tween.tween_property(alert_container, "modulate:a", 0.0, 0.35).set_delay(0.40)
+func show_landing_alert(_text: String, _is_perfect: bool) -> void:
+	# V8.2: Landing banners removed — center screen stays gameplay.
+	# Progress counter (top bar) already shows pad number.
+	pass
 
 func _on_fuel_changed(current: float, max_val: float) -> void:
 	current_fuel_ratio = current / max_val if max_val > 0.0 else 0.0
+	if fuel_droplets:
+		fuel_droplets.set_fuel_ratio(current_fuel_ratio)

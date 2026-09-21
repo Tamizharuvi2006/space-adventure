@@ -8,7 +8,8 @@ class_name SolarTerrainGenerator
 # - Mountain Ridge Crest (Pads straddling razor-sharp mountain summits)
 # - Crater Rim (Pads perched on the rim of deep impact crater bowls)
 # - Valley Shelf (Pads nested on elevated benches within deep canyon gorges)
-# Visual only — ZERO collision shapes in this generator.
+# Integrated Terrain Hazard Colliders match visible rock silhouettes 1:1.
+# Touching any rock surface outside a valid landing pad causes immediate crash death.
 # Background + midground parallax layers stream continuously as player travels.
 
 const SunZoneData = preload("res://scripts/planet_data.gd")
@@ -377,6 +378,22 @@ func _build_faceted_rock_layers(chunk: Node2D, surface_pts: PackedVector2Array, 
 	rock.color = rock_col
 	chunk.add_child(rock)
 
+	# 1b. Dedicated Terrain Hazard Collision (Matches exact visible rock silhouette)
+	var hazard_body = StaticBody2D.new()
+	hazard_body.name = "TerrainHazard"
+	hazard_body.add_to_group("terrain_hazard")
+	hazard_body.collision_layer = 2
+	hazard_body.collision_mask = 0
+
+	var col_poly = CollisionPolygon2D.new()
+	col_poly.name = "TerrainCollision"
+	col_poly.polygon = body_pts
+	hazard_body.add_child(col_poly)
+	if not chunk.is_inside_tree():
+		chunk.add_child(hazard_body)
+	else:
+		chunk.add_child.call_deferred(hazard_body)
+
 	# 2. Subtle Sunlit Crest (Traces the top surface edge with warm solar illumination)
 	var sun_col = Color(
 		minf(rock_col.r * 1.25, 1.0),
@@ -560,6 +577,21 @@ func _add_chasm_monolith(chunk: Node2D, center_x: float, peak_y: float, rock_col
 	body.color = Color(rock_col.r * 1.05, rock_col.g * 1.0, rock_col.b * 0.95, 1.0)
 	monolith.add_child(body)
 
+	var monolith_hazard = StaticBody2D.new()
+	monolith_hazard.name = "MonolithHazard"
+	monolith_hazard.add_to_group("terrain_hazard")
+	monolith_hazard.collision_layer = 2
+	monolith_hazard.collision_mask = 0
+
+	var m_poly = CollisionPolygon2D.new()
+	m_poly.name = "MonolithCollision"
+	m_poly.polygon = body_pts
+	monolith_hazard.add_child(m_poly)
+	if not monolith.is_inside_tree():
+		monolith.add_child(monolith_hazard)
+	else:
+		monolith.add_child.call_deferred(monolith_hazard)
+
 	# Sunlit facet
 	var sun_facet = Polygon2D.new()
 	sun_facet.polygon = PackedVector2Array([
@@ -611,8 +643,8 @@ func build_start_pad_foundation(start_pad: SolarPlatform) -> void:
 
 	var far_left = -1400.0
 	var shelf_l = pos.x - half_w - 20.0
-	var shelf_r = pos.x + half_w + 20.0
-	var far_right = shelf_r + 45.0
+	var shelf_r = pos.x + half_w + 15.0
+	var far_right = shelf_r
 
 	# Continuous expansive Martian plateau from far off-screen on the left
 	var surface_points: PackedVector2Array = [
@@ -622,8 +654,7 @@ func build_start_pad_foundation(start_pad: SolarPlatform) -> void:
 		Vector2(-200.0,   footing_y + 15.0),
 		Vector2(shelf_l,  footing_y),
 		Vector2(pos.x,    footing_y + 1.0),
-		Vector2(shelf_r,  footing_y),
-		Vector2(far_right, footing_y + 18.0)
+		Vector2(far_right, footing_y)
 	]
 
 	_build_faceted_rock_layers(chunk_node, surface_points, far_left, far_right, abyss_depth_y, base_rock, strata_col)
@@ -663,8 +694,8 @@ func build_canyon_segment(pad_a: SolarPlatform, pad_b: SolarPlatform, motif: For
 
 	var start_x = pos_a.x + half_wa + 15.0
 	var shelf_bl = pos_b.x - half_wb - 20.0
-	var shelf_br = pos_b.x + half_wb + 20.0
-	var end_x = shelf_br + 80.0
+	var shelf_br = pos_b.x + half_wb + 15.0
+	var end_x = shelf_br
 
 	var dx = shelf_bl - start_x
 	var max_y = maxf(footing_ya, footing_yb)
@@ -707,9 +738,7 @@ func build_canyon_segment(pad_a: SolarPlatform, pad_b: SolarPlatform, motif: For
 
 	surface_points.append(Vector2(shelf_bl, footing_yb))
 	surface_points.append(Vector2(pos_b.x, footing_yb + 1.0))
-	surface_points.append(Vector2(shelf_br, footing_yb))
-	surface_points.append(Vector2(shelf_br + 25.0, footing_yb + 20.0))
-	surface_points.append(Vector2(end_x, footing_yb + 45.0))
+	surface_points.append(Vector2(end_x, footing_yb))
 
 	_build_faceted_rock_layers(chunk_node, surface_points, start_x, end_x, abyss_depth_y, base_rock, strata_col)
 	_add_bedrock_anchor_system(chunk_node, pos_b.x, footing_yb, half_wb, base_rock)

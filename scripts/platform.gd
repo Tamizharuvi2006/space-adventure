@@ -87,16 +87,12 @@ func _apply_width() -> void:
 		
 	var col_node = get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if col_node and col_node.shape:
-		if not col_node.shape.resource_local_to_scene:
-			col_node.shape = col_node.shape.duplicate()
 		var rect = col_node.shape as RectangleShape2D
 		if rect:
 			rect.size.x = current_width
 			
 	var land_node = get_node_or_null("LandingArea/LandingShape") as CollisionShape2D
 	if land_node and land_node.shape:
-		if not land_node.shape.resource_local_to_scene:
-			land_node.shape = land_node.shape.duplicate()
 		var land_rect = land_node.shape as RectangleShape2D
 		if land_rect:
 			land_rect.size.x = maxf(current_width - 8.0, 70.0)

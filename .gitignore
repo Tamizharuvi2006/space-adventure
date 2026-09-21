@@ -2,3 +2,17 @@
 .godot/
 /android/
 extension_api.json
+
+# Keystores & signing keys
+*.keystore
+*.jks
+export_presets.cfg
+
+# Android build outputs
+*.apk
+*.aab
+*.idsig
+
+# Test captures and visual test previews
+test_captures/
+

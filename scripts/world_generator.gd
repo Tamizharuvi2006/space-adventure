@@ -235,6 +235,8 @@ func get_pad_blueprint(idx: int, curr_y: float) -> Dictionary:
 	}
 
 func spawn_next_route_pad() -> SolarPlatform:
+	if next_platform_idx >= SunZoneData.TOTAL_PADS:
+		return null
 	next_platform_idx += 1
 	var prev_pos = last_spawn_pos
 	var zone = SunZoneData.get_zone_for_pad(next_platform_idx)
@@ -302,18 +304,27 @@ func on_platform_reached(landed_pad: SolarPlatform) -> void:
 	current_platform = landed_pad
 	var landed_idx = landed_pad.platform_index
 
-	# Stream new route pads ahead immediately so next_platform is guaranteed
-	_stream_ahead(landed_idx)
-
-	# Determine next route pad
-	next_platform = get_platform_by_index(landed_idx + 1)
+	# Determine next route pad (null if landed on or beyond Pad 100)
+	if landed_idx >= SunZoneData.TOTAL_PADS:
+		next_platform = null
+	else:
+		next_platform = get_platform_by_index(landed_idx + 1)
 
 	# Update visuals
 	update_route_visuals(landed_idx)
 
+	# Stream new route pads ahead deferred to avoid modifying physics tree during query flush
+	if is_inside_tree():
+		call_deferred("_stream_ahead", landed_idx)
+	else:
+		_stream_ahead(landed_idx)
+
 func _stream_ahead(curr_idx: int) -> void:
-	while next_platform_idx < curr_idx + buffer_pads_ahead:
-		spawn_next_route_pad()
+	var target_idx = mini(curr_idx + buffer_pads_ahead, SunZoneData.TOTAL_PADS)
+	while next_platform_idx < target_idx:
+		var p = spawn_next_route_pad()
+		if not p:
+			break
 
 	update_route_visuals(curr_idx)
 	_recycle_old_pads(curr_idx)
@@ -345,6 +356,8 @@ func set_debug_labels(enabled: bool) -> void:
 			p.set_debug_labels(enabled)
 
 func get_platform_by_index(idx: int) -> SolarPlatform:
+	if idx > SunZoneData.TOTAL_PADS:
+		return null
 	for p in active_platforms:
 		if is_instance_valid(p) and p.platform_index == idx:
 			return p
@@ -354,9 +367,14 @@ func get_highest_platform_index() -> int:
 	return next_platform_idx
 
 func ensure_checkpoint_exists(idx: int) -> SolarPlatform:
+	if idx > SunZoneData.TOTAL_PADS:
+		return null
 	var existing = get_platform_by_index(idx)
 	if existing:
 		return existing
-	while next_platform_idx < idx + buffer_pads_ahead:
-		spawn_next_route_pad()
+	var target_idx = mini(idx + buffer_pads_ahead, SunZoneData.TOTAL_PADS)
+	while next_platform_idx < target_idx:
+		var p = spawn_next_route_pad()
+		if not p:
+			break
 	return get_platform_by_index(idx)

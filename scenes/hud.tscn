@@ -1,28 +1,30 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=27 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scripts/pause_icon.gd" id="2_pause_icon"]
+[ext_resource type="Script" path="res://scripts/fuel_droplets.gd" id="3_fuel_droplets"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_alt"]
-font_size = 42
-font_color = Color(1, 0.96, 0.9, 1)
-outline_size = 6
+font_size = 28
+font_color = Color(1, 0.98, 0.94, 1)
+outline_size = 5
 outline_color = Color(0.04, 0.03, 0.08, 0.95)
 
 [sub_resource type="LabelSettings" id="LabelSettings_alt_sub"]
 font_size = 11
-font_color = Color(1, 0.78, 0.4, 0.85)
+font_color = Color(1, 0.85, 0.45, 0.90)
 outline_size = 2
 outline_color = Color(0.04, 0.03, 0.08, 0.9)
 
 [sub_resource type="LabelSettings" id="LabelSettings_best_tag"]
 font_size = 11
-font_color = Color(1, 0.75, 0.35, 0.75)
+font_color = Color(1, 0.78, 0.40, 0.85)
 outline_size = 2
 outline_color = Color(0.04, 0.03, 0.08, 0.9)
 
 [sub_resource type="LabelSettings" id="LabelSettings_best"]
 font_size = 18
-font_color = Color(1, 0.85, 0.45, 1)
+font_color = Color(1, 0.92, 0.55, 1)
 outline_size = 3
 outline_color = Color(0.04, 0.03, 0.08, 0.95)
 
@@ -68,40 +70,49 @@ outline_size = 2
 outline_color = Color(0.04, 0.03, 0.08, 0.95)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pause_btn_normal"]
-bg_color = Color(0.1, 0.14, 0.22, 0.8)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.25, 0.8, 0.95, 0.75)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+bg_color = Color(0.08, 0.11, 0.18, 0.65)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.6, 0.75, 0.35)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 3
+shadow_offset = Vector2(0, 2)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pause_btn_hover"]
-bg_color = Color(0.15, 0.22, 0.35, 0.9)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.4, 0.95, 1, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+bg_color = Color(0.12, 0.16, 0.26, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.55, 0.75, 0.95, 0.55)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 4
+shadow_offset = Vector2(0, 2)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pause_btn_pressed"]
-bg_color = Color(0.06, 0.09, 0.16, 0.95)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.2, 0.65, 0.8, 0.9)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+bg_color = Color(0.15, 0.2, 0.32, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.65, 0.85, 1, 0.75)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0, 0, 0, 0.2)
+shadow_size = 1
+shadow_offset = Vector2(0, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_primary_normal"]
 bg_color = Color(0.1, 0.2, 0.32, 0.9)
@@ -175,21 +186,11 @@ corner_radius_top_right = 12
 corner_radius_bottom_right = 12
 corner_radius_bottom_left = 12
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_indicator_pill"]
-bg_color = Color(0.08, 0.14, 0.22, 0.28)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.2, 0.8, 1, 0.4)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_indicator"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_indicator_chevron"]
-font_size = 28
-font_color = Color(0.35, 0.9, 1, 0.85)
+font_size = 20
+font_color = Color(0.35, 0.9, 1, 0.75)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_alert_pill"]
 bg_color = Color(0.04, 0.05, 0.10, 0.90)
@@ -229,36 +230,25 @@ font_color = Color(1, 0.88, 0.3, 1)
 outline_size = 10
 outline_color = Color(0.04, 0.03, 0.08, 0.95)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_arrival_card"]
-bg_color = Color(0.04, 0.06, 0.12, 0.88)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.3, 0.85, 1, 0.85)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-expand_margin_left = 16.0
-expand_margin_top = 12.0
-expand_margin_right = 16.0
-expand_margin_bottom = 12.0
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_arrival_card"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_arrival_icon"]
-font_size = 46
+font_size = 1
+font_color = Color(1, 1, 1, 0)
 
 [sub_resource type="LabelSettings" id="LabelSettings_arrival_title"]
-font_size = 32
-font_color = Color(1, 0.92, 0.5, 1)
-outline_size = 6
-outline_color = Color(0.04, 0.03, 0.08, 0.95)
+font_size = 19
+font_color = Color(1, 0.94, 0.86, 1)
+outline_size = 4
+outline_color = Color(0.04, 0.02, 0.01, 0.9)
+shadow_size = 4
+shadow_color = Color(0.85, 0.45, 0.1, 0.35)
 
 [sub_resource type="LabelSettings" id="LabelSettings_arrival_sub"]
-font_size = 15
-font_color = Color(0.35, 0.92, 1, 0.95)
+font_size = 12
+font_color = Color(1, 0.82, 0.55, 0.72)
 outline_size = 3
-outline_color = Color(0.04, 0.03, 0.08, 0.95)
+outline_color = Color(0.04, 0.02, 0.01, 0.85)
 
 [node name="HUD" type="CanvasLayer"]
 process_mode = 3
@@ -287,6 +277,7 @@ theme_override_constants/margin_bottom = 8
 
 [node name="TopBar" type="Control" parent="GameplayHUD/TopMarginContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
 mouse_filter = 2
 
 [node name="BestContainer" type="VBoxContainer" parent="GameplayHUD/TopMarginContainer/TopBar"]
@@ -303,7 +294,7 @@ label_settings = SubResource("LabelSettings_best_tag")
 
 [node name="BestLabel" type="Label" parent="GameplayHUD/TopMarginContainer/TopBar/BestContainer"]
 layout_mode = 2
-text = "0 m"
+text = "PAD 1"
 label_settings = SubResource("LabelSettings_best")
 
 [node name="CenterCluster" type="VBoxContainer" parent="GameplayHUD/TopMarginContainer/TopBar"]
@@ -320,13 +311,13 @@ alignment = 1
 
 [node name="AltitudeLabel" type="Label" parent="GameplayHUD/TopMarginContainer/TopBar/CenterCluster"]
 layout_mode = 2
-text = "0 m"
+text = "1 / 100"
 label_settings = SubResource("LabelSettings_alt")
 horizontal_alignment = 1
 
 [node name="AltitudeTag" type="Label" parent="GameplayHUD/TopMarginContainer/TopBar/CenterCluster"]
 layout_mode = 2
-text = "ALTITUDE"
+text = "SUN JOURNEY"
 label_settings = SubResource("LabelSettings_alt_sub")
 horizontal_alignment = 1
 
@@ -337,44 +328,57 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_dest_badge")
 
 [node name="DestinationLabel" type="Label" parent="GameplayHUD/TopMarginContainer/TopBar/CenterCluster/DestinationBadge"]
 layout_mode = 2
-text = "  SUN ➔ MERCURY  "
+text = "  SOLAR VALLEY  "
 label_settings = SubResource("LabelSettings_dest")
 horizontal_alignment = 1
 
-[node name="FuelBarContainer" type="VBoxContainer" parent="GameplayHUD/TopMarginContainer/TopBar/CenterCluster"]
+[node name="FuelBarContainer" type="CenterContainer" parent="GameplayHUD/TopMarginContainer/TopBar/CenterCluster"]
 layout_mode = 2
-theme_override_constants/separation = 2
-alignment = 1
+mouse_filter = 2
+
+[node name="FuelDroplets" type="Control" parent="GameplayHUD/TopMarginContainer/TopBar/CenterCluster/FuelBarContainer"]
+custom_minimum_size = Vector2(162, 16)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("3_fuel_droplets")
 
 [node name="FuelBar" type="ProgressBar" parent="GameplayHUD/TopMarginContainer/TopBar/CenterCluster/FuelBarContainer"]
-custom_minimum_size = Vector2(210, 7)
+visible = false
+custom_minimum_size = Vector2(1, 1)
 layout_mode = 2
-size_flags_horizontal = 4
-theme_override_styles/background = SubResource("StyleBoxFlat_fuel_bg")
-theme_override_styles/fill = SubResource("StyleBoxFlat_fuel_fill")
+mouse_filter = 2
 value = 100.0
-show_percentage = false
 
 [node name="FuelStatusLabel" type="Label" parent="GameplayHUD/TopMarginContainer/TopBar/CenterCluster/FuelBarContainer"]
+visible = false
 layout_mode = 2
-label_settings = SubResource("LabelSettings_fuel_status")
-horizontal_alignment = 1
+mouse_filter = 2
 
 [node name="PauseButton" type="Button" parent="GameplayHUD/TopMarginContainer/TopBar"]
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -50.0
+offset_left = -48.0
 offset_right = 0.0
-offset_bottom = 50.0
+offset_bottom = 48.0
 grow_horizontal = 0
+pivot_offset = Vector2(24, 24)
 focus_mode = 0
 theme_override_styles/normal = SubResource("StyleBoxFlat_pause_btn_normal")
 theme_override_styles/hover = SubResource("StyleBoxFlat_pause_btn_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_pause_btn_pressed")
-theme_override_font_sizes/font_size = 20
-text = "⏸"
+
+[node name="PauseIcon" type="Control" parent="GameplayHUD/TopMarginContainer/TopBar/PauseButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_pause_icon")
 
 [node name="CenterAlert" type="Control" parent="GameplayHUD"]
 layout_mode = 1
@@ -423,45 +427,58 @@ vertical_alignment = 1
 [node name="PlanetArrivalCard" type="PanelContainer" parent="GameplayHUD"]
 modulate = Color(1, 1, 1, 0)
 layout_mode = 1
-anchors_preset = 8
+anchors_preset = 5
 anchor_left = 0.5
-anchor_top = 0.5
 anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -260.0
-offset_top = -140.0
-offset_right = 260.0
-offset_bottom = 20.0
+offset_left = -180.0
+offset_top = 108.0
+offset_right = 180.0
+offset_bottom = 172.0
 grow_horizontal = 2
-grow_vertical = 2
-pivot_offset = Vector2(260, 80)
+pivot_offset = Vector2(180, 32)
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_arrival_card")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_arrival_card")
 
 [node name="VBox" type="VBoxContainer" parent="GameplayHUD/PlanetArrivalCard"]
 layout_mode = 2
-theme_override_constants/separation = 4
+mouse_filter = 2
+theme_override_constants/separation = 2
 alignment = 1
 
 [node name="ArrivalIcon" type="Label" parent="GameplayHUD/PlanetArrivalCard/VBox"]
+visible = false
 layout_mode = 2
-text = "🌍"
+mouse_filter = 2
+text = ""
 label_settings = SubResource("LabelSettings_arrival_icon")
 horizontal_alignment = 1
 
 [node name="ArrivalTitle" type="Label" parent="GameplayHUD/PlanetArrivalCard/VBox"]
 layout_mode = 2
-text = "EARTH REACHED"
+mouse_filter = 2
+text = "SOLAR CRATERS"
 label_settings = SubResource("LabelSettings_arrival_title")
 horizontal_alignment = 1
 
 [node name="ArrivalSub" type="Label" parent="GameplayHUD/PlanetArrivalCard/VBox"]
 layout_mode = 2
-text = "Atmospheric Cradle • Moving Platforms"
+mouse_filter = 2
+text = "DEEP FORMATIONS"
 label_settings = SubResource("LabelSettings_arrival_sub")
 horizontal_alignment = 1
 
+[node name="AccentCenter" type="CenterContainer" parent="GameplayHUD/PlanetArrivalCard/VBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="AccentLine" type="ColorRect" parent="GameplayHUD/PlanetArrivalCard/VBox/AccentCenter"]
+custom_minimum_size = Vector2(110, 1.5)
+layout_mode = 2
+mouse_filter = 2
+color = Color(1, 0.72, 0.25, 0.65)
+
 [node name="BottomMarginContainer" type="MarginContainer" parent="GameplayHUD"]
+visible = false
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -481,11 +498,12 @@ mouse_filter = 2
 alignment = 1
 
 [node name="LeftIndicator" type="PanelContainer" parent="GameplayHUD/BottomMarginContainer/IndicatorHBox"]
-custom_minimum_size = Vector2(68, 56)
+modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_vertical = 8
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_indicator_pill")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_indicator")
 
 [node name="LeftLabel" type="Label" parent="GameplayHUD/BottomMarginContainer/IndicatorHBox/LeftIndicator"]
 layout_mode = 2
@@ -500,11 +518,12 @@ size_flags_horizontal = 3
 mouse_filter = 2
 
 [node name="RightIndicator" type="PanelContainer" parent="GameplayHUD/BottomMarginContainer/IndicatorHBox"]
-custom_minimum_size = Vector2(68, 56)
+modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_vertical = 8
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_indicator_pill")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_indicator")
 
 [node name="RightLabel" type="Label" parent="GameplayHUD/BottomMarginContainer/IndicatorHBox/RightIndicator"]
 layout_mode = 2
@@ -659,6 +678,29 @@ horizontal_alignment = 1
 [node name="Spacer" type="Control" parent="PauseMenu/VBox"]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
+
+[node name="MusicVolumeRow" type="HBoxContainer" parent="PauseMenu/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="MusicLabel" type="Label" parent="PauseMenu/VBox/MusicVolumeRow"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_colors/font_color = Color(0.75, 0.85, 1.0, 0.85)
+theme_override_font_sizes/font_size = 14
+text = "🎵"
+
+[node name="MusicSlider" type="HSlider" parent="PauseMenu/VBox/MusicVolumeRow"]
+custom_minimum_size = Vector2(160, 20)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 0.0
+max_value = 100.0
+value = 70.0
+step = 1.0
+focus_mode = 0
 
 [node name="ResumeButton" type="Button" parent="PauseMenu/VBox"]
 custom_minimum_size = Vector2(220, 48)

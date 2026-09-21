@@ -1,73 +1,76 @@
 shader_type canvas_item;
 
-// Explore Sun V4 — Warm Solar Atmosphere Sky
-// Inspired by Mars: Mars visual style:
-// TOP: bright teal-green (#5ECFB8)
-// MID: warm yellow-amber (#D4A83A)
-// LOWER-MID: warm orange-coral (#D86832)
-// BOTTOM: deep warm red-brown (#7A2010)
+// Explore Sun V8 — Cinematic Alien Planet Sky
+// Param names match background.gd set_shader_parameter calls exactly.
 
-uniform vec4 top_color : source_color = vec4(0.37, 0.81, 0.72, 1.0);   // Teal-green
-uniform vec4 mid_color : source_color = vec4(0.83, 0.66, 0.23, 1.0);   // Golden amber
-uniform vec4 bottom_color : source_color = vec4(0.48, 0.13, 0.06, 1.0); // Deep warm red
-uniform vec4 sun_color : source_color = vec4(1.0, 0.97, 0.82, 1.0);   // Bright warm white-yellow
-uniform vec2 sun_pos = vec2(0.35, 0.22);  // Solar position in upper sky
-uniform float sun_radius = 0.11;
-uniform float aspect_ratio = 1.77777778; // Dynamic viewport aspect ratio (W / H)
-uniform vec2 cam_offset = vec2(0.0, 0.0); // Celestial parallax offset from camera
+uniform vec4 sky_color     : source_color = vec4(0.04, 0.03, 0.08, 1.0); // Upper sky (dark)
+uniform vec4 horizon_color : source_color = vec4(0.24, 0.08, 0.06, 1.0); // Mid horizon
+uniform vec4 bottom_color  : source_color = vec4(0.55, 0.22, 0.08, 1.0); // Warm ground glow
+uniform vec4 sun_color     : source_color = vec4(1.00, 0.78, 0.35, 1.0); // Sun disc
+uniform vec2 sun_pos       = vec2(0.52, 0.15);
+uniform float sun_radius   = 0.13;
+uniform float aspect_ratio = 1.77777778;
+uniform vec2  cam_offset   = vec2(0.0, 0.0);
+uniform float haze_intensity = 0.30;
 
 void fragment() {
-    vec2 uv = UV;
-    
-    // Three-stop warm atmospheric gradient
-    // Top (teal) → Mid (amber) → Bottom (deep red)
+    vec2 uv = SCREEN_UV;
+
+    // ── 3-stop sky gradient: dark upper → warm horizon → glowing ground ──────
     vec4 sky;
-    if (uv.y < 0.40) {
-        sky = mix(top_color, mid_color, smoothstep(0.0, 0.40, uv.y));
+    if (uv.y < 0.45) {
+        sky = mix(sky_color, horizon_color, smoothstep(0.0, 0.45, uv.y));
     } else {
-        sky = mix(mid_color, bottom_color, smoothstep(0.40, 1.0, uv.y));
+        sky = mix(horizon_color, bottom_color, smoothstep(0.45, 1.0, uv.y));
     }
-    
-    // Subtle warm atmospheric haze — slightly lighter in the middle horizon band
-    vec4 haze_color = vec4(0.75, 0.45, 0.22, 1.0);
-    float haze = smoothstep(0.35, 0.55, uv.y) * (1.0 - smoothstep(0.55, 0.75, uv.y)) * 0.28;
-    sky = mix(sky, haze_color, haze);
-    
-    // Sun disc — crisp circular disc matching any mobile aspect ratio with celestial parallax
-    vec2 dynamic_sun = sun_pos - cam_offset;
-    vec2 aspect_uv = uv;
-    aspect_uv.x *= aspect_ratio;
-    vec2 scaled_sun = dynamic_sun;
-    scaled_sun.x *= aspect_ratio;
-    
-    float dist = distance(aspect_uv, scaled_sun);
-    
-    // Hard sun disc core — crisp white disc like in the reference
-    float sun_core = 1.0 - smoothstep(sun_radius * 0.82, sun_radius * 0.98, dist);
-    
-    // Soft warm glow around the sun (atmospheric scatter)
-    float sun_glow = exp(-dist * 6.5) * 0.40;
-    float sun_glow2 = exp(-dist * 2.8) * 0.15;
-    
-    // Apply sun: bright white disc + layered warm glow
-    vec4 final_color = mix(sky, sun_color, sun_core * 0.95);
-    final_color.rgb += sun_color.rgb * sun_glow * (1.0 - sun_core);
-    final_color.rgb += vec3(0.90, 0.60, 0.25) * sun_glow2 * (1.0 - sun_core);
-    
-    // Faint geometric polygon haze shapes near horizon (atmospheric refraction)
-    // Subtle — just a slight lightening in the mid-horizon band
-    float atmo_band = smoothstep(0.45, 0.52, uv.y) * (1.0 - smoothstep(0.52, 0.62, uv.y)) * 0.18;
-    final_color.rgb = mix(final_color.rgb, vec3(0.80, 0.55, 0.30), atmo_band);
-    
-    // No visible stars — the atmosphere is too warm/opaque for cold star visibility
-    // (stars only visible in the very upper teal sky zone, barely)
-    if (uv.y < 0.18) {
-        float star_noise = fract(sin(dot(floor(uv * 280.0), vec2(12.9898, 78.233))) * 43758.5453);
-        if (star_noise > 0.988) {
-            float star_bright = (star_noise - 0.988) * 83.0 * (0.18 - uv.y) / 0.18;
-            final_color.rgb += vec3(0.8, 0.9, 1.0) * star_bright * 0.3;
+
+    // ── Atmospheric haze band near horizon ────────────────────────────────────
+    float haze = smoothstep(0.28, 0.48, uv.y) * (1.0 - smoothstep(0.48, 0.72, uv.y));
+    vec4 haze_col = mix(horizon_color, bottom_color, 0.45);
+    sky = mix(sky, haze_col, haze * haze_intensity * 0.55);
+
+    // ── Sun disc with multi-layer cinematic glow ──────────────────────────────
+    vec2 dyn_sun = sun_pos - cam_offset;
+    vec2 asp_uv  = vec2(uv.x * aspect_ratio, uv.y);
+    vec2 asp_sun = vec2(dyn_sun.x * aspect_ratio, dyn_sun.y);
+    float dist   = distance(asp_uv, asp_sun);
+
+    // Hard crisp disc core
+    float sun_core   = 1.0 - smoothstep(sun_radius * 0.80, sun_radius * 0.96, dist);
+    // Inner warm glow
+    float glow_inner = exp(-dist * 5.5) * 0.55;
+    // Wide atmospheric scatter bloom
+    float glow_outer = exp(-dist * 2.0) * 0.28;
+    // Subtle wide corona
+    float corona     = exp(-dist * 0.85) * 0.14;
+
+    vec4 final = mix(sky, sun_color, sun_core * 0.96);
+    final.rgb += sun_color.rgb * glow_inner * (1.0 - sun_core * 0.8);
+    final.rgb += mix(sun_color.rgb, vec3(0.95, 0.52, 0.18), 0.55) * glow_outer;
+    final.rgb += vec3(0.78, 0.38, 0.14) * corona;
+
+    // ── Stars: dense, small, atmospheric extinction near horizon ─────────────
+    float star_vis = clamp(1.0 - smoothstep(0.0, 0.32, uv.y), 0.0, 1.0);
+    // Suppress stars near the sun disc
+    float sun_prox = 1.0 - clamp(exp(-dist * 1.6) * 2.8, 0.0, 1.0);
+    star_vis *= sun_prox;
+
+    if (star_vis > 0.01) {
+        vec2 star_uv = vec2(uv.x * aspect_ratio, uv.y);
+        // Fine grid — small stars
+        float n1 = fract(sin(dot(floor(star_uv * 240.0), vec2(12.9898, 78.233))) * 43758.5453);
+        if (n1 > 0.974) {
+            float bright = (n1 - 0.974) / 0.026;
+            float twinkle = fract(sin(dot(floor(star_uv * 240.0), vec2(45.23, 95.48))) * 21341.9);
+            final.rgb += vec3(0.82, 0.88, 1.0) * bright * star_vis * (0.45 + twinkle * 0.55);
+        }
+        // Coarser grid — slightly larger stars
+        float n2 = fract(sin(dot(floor(star_uv * 120.0), vec2(93.98, 24.23))) * 73258.5453);
+        if (n2 > 0.988) {
+            float bright = (n2 - 0.988) / 0.012;
+            final.rgb += vec3(0.90, 0.92, 1.0) * bright * 1.6 * star_vis;
         }
     }
-    
-    COLOR = final_color;
+
+    COLOR = final;
 }
