@@ -74,243 +74,171 @@ func get_pad_blueprint(idx: int, curr_y: float) -> Dictionary:
 	var motif = SolarTerrainGenerator.FormationType.MESA
 	var dx: float = 1200.0
 	var dy: float = 0.0
+	var width: float = 160.0
 	var chapter: String = "Expedition"
 	var pattern: String = "STRAIGHT_GLIDE"
 	var is_milestone: bool = (idx % 10 == 0)
 
-	# ─── 20 MICRO-SCENE LANDSCAPE DESIGN — 100 Landing Stations ─────────────
-	# Each group of 5 pads = 1 landscape scene with its own local vertical rhythm.
-	# Scenes are stitched together so the world reads as exploration, not a plotted line.
-	# Forward progression (dx > 0) guaranteed on all 100 pads.
-	# Physics, controls, camera, and fuel mechanics are NOT changed here.
+	# ─── 99-TRANSITION INDIVIDUAL AUTHORING — 100 Landing Stations ───────────
+	# Every single transition (N→N+1) is individually designed.
+	# Difficulty rhythm: E1→M1→H1→E2→M2→H1→R→M1→E1→L→... (never same tier 3× in a row)
+	# Width is authored per pad: E1/R=200–210, M=155–180, H1=132–148, H2=118–135, L=168–185
+	# Tier key: E1=very easy, E2=easy, M1=moderate, M2=moderate+,
+	#           H1=hard, H2=hard+, L=long glide, R=recovery
 	#
-	# ZONES:
-	#   Solar Valley  (Pads  1–20) — 4 scenes: Valley Floor, Rising Ridge, Canyon Shelf, Valley Crest
-	#   Solar Craters (Pads 21–40) — 4 scenes: Crater Rim, Outer Crater, Deep Basin, Far Rim
-	#   Solar Mtns    (Pads 41–60) — 4 scenes: Mountain Base, Sheer Ascent, Summit/Couloir, Mtn Pass
-	#   Solar Ruins   (Pads 61–80) — 4 scenes: Ruined Approach, Sunken Forum, Monument Field, Pyramid Terraces
-	#   Solar Core    (Pads 81–100)— 4 scenes: Caldera Rim, Plasma Valley, Core Ascent, Solar Core Apex
+	# ZONES (macro geography preserved, variety authored individually):
+	#   Solar Valley  (Pads  1–20) — E/M dominant, 2×H1, 1×H2, recovery at 7 & 18
+	#   Solar Craters (Pads 21–40) — M/H mix, 4 hard transitions, recovery at 28 & 36
+	#   Solar Mtns    (Pads 41–60) — H dominant, 6 hard, recovery at 48 & 56
+	#   Solar Ruins   (Pads 61–80) — complex combos, recovery at 63, 69, 78
+	#   Solar Core    (Pads 81–100)— max variety, recovery at 88 & 98, grand finale
 	match idx:
 		# ══════════════════════════════════════════════════════════════════════
-		# ZONE 0: SOLAR VALLEY (Pads 1–20)
-		# Macro neighbourhood: Y≈400–620 (local humps, no macro drift)
+		# ZONE 0 — SOLAR VALLEY (Pads 1–20)
+		# Tier sequence: E1·M1·H1·E2·M2·H1·R·M1·E1·L · E2·H1·M2·E1·M1·H2·M2·R·H1·L
+		# Recovery pads: 7 (R), 18 (R)
 		# ══════════════════════════════════════════════════════════════════════
-
-		# ── SCENE 01: Valley Floor (Pads 1–5) ──────────────────────────────
-		# Broad flat basin. Short hop → mesa rise → long glide off mesa → settle.
-		# Silhouette: flat ──●── ●──── /●\ ─────● ──●
-		1:  dx = 820.0;  dy =  20.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Valley Floor Entry";       pattern = "SHORT_TECHNICAL_HOP"
-		2:  dx = 980.0;  dy = -95.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Valley Mesa Rise";         pattern = "TERRACED_STEP_UP"
-		3:  dx = 1420.0; dy =  60.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Mesa Glide Off";           pattern = "DEEP_LOW_RIGHT"
-		4:  dx = 1060.0; dy = -25.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Valley Shelf Settle";      pattern = "LEVEL_SPRINT"
-		5:  dx = 880.0;  dy =  15.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Valley Floor Rest";        pattern = "RECOVERY_PAD"
-
-		# ── SCENE 02: Rising Ridge (Pads 6–10) ─────────────────────────────
-		# Stepwise ascent to a ridge crest then a long milestone traverse.
-		# Silhouette: ●─ /● /● ────● ──────────●
-		6:  dx = 860.0;  dy = -55.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Ridge Foot Climb";         pattern = "SHORT_TECHNICAL_HOP"
-		7:  dx = 1060.0; dy = -110.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Ridge Step Up";            pattern = "TERRACED_STEP_UP"
-		8:  dx = 1480.0; dy = -35.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "High Ridge Traverse";      pattern = "RETRO_BRAKE"
-		9:  dx = 920.0;  dy =  80.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Ridge Saddle Dip";         pattern = "RECOVERY_PAD"
-		10: dx = 2200.0; dy = -15.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Valley Mid-Spire";         pattern = "ZONE_MILESTONE"; is_milestone = true
-
-		# ── SCENE 03: Canyon Shelf (Pads 11–15) ────────────────────────────
-		# Enter canyon → deep drop → shelf ledge → climb out → technical hop out.
-		# Silhouette: ●─ \● \──●── /● ●
-		11: dx = 860.0;  dy =  85.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Canyon Entry Drop";        pattern = "TERRACED_STEP_DOWN"
-		12: dx = 950.0;  dy =  140.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Canyon Deep Plunge";       pattern = "DEEP_LOW_RIGHT"
-		13: dx = 1000.0; dy = -15.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Canyon Shelf Ledge";       pattern = "LEVEL_SPRINT"
-		14: dx = 1100.0; dy = -120.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Shelf Climb Out";          pattern = "TERRACED_STEP_UP"
-		15: dx = 880.0;  dy =  25.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Canyon Rim Hop";           pattern = "SHORT_TECHNICAL_HOP"
-
-		# ── SCENE 04: Valley Crest (Pads 16–20) ────────────────────────────
-		# Broad crest approach → steep ascent → crest rest → long retro-brake → zone exit.
-		# Silhouette: ──● /● ─● ──────● ──────────●
-		16: dx = 1400.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Crest Approach Traverse";  pattern = "RETRO_BRAKE"
-		17: dx = 920.0;  dy = -130.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Crest Steep Ascent";       pattern = "STEEP_HIGH_RIGHT"
-		18: dx = 970.0;  dy =  20.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Crest Shelf Rest";         pattern = "RECOVERY_PAD"
-		19: dx = 1680.0; dy = -40.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Crest Long Brake Run";     pattern = "RETRO_BRAKE"
-		20: dx = 2250.0; dy =  15.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Solar Valley Milestone";   pattern = "ZONE_MILESTONE"; is_milestone = true
+		1:   dx=840.0;  dy= +18.0; width=206.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Valley Entry";          pattern="SHORT_TECHNICAL_HOP"   # E1
+		2:   dx=1140.0; dy= -80.0; width=170.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Mesa Rise";             pattern="TERRACED_STEP_UP"      # M1
+		3:   dx=1020.0; dy=-148.0; width=143.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="First Spire";           pattern="STEEP_HIGH_RIGHT"      # H1
+		4:   dx=940.0;  dy= +52.0; width=194.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Gorge Settle";          pattern="RECOVERY_PAD"         # E2
+		5:   dx=1310.0; dy=+100.0; width=158.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Canyon Descent";        pattern="DEEP_LOW_RIGHT"       # M2
+		6:   dx=1060.0; dy=-152.0; width=140.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Wall Assault";          pattern="STEEP_HIGH_RIGHT"     # H1
+		7:   dx=870.0;  dy= +28.0; width=207.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Mesa Rest";             pattern="RECOVERY_PAD"         # R
+		8:   dx=1180.0; dy= -72.0; width=172.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Ridge Traverse";        pattern="RETRO_BRAKE"          # M1
+		9:   dx=820.0;  dy= +22.0; width=204.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Gentle Step";           pattern="SHORT_TECHNICAL_HOP"  # E1
+		10:  dx=2200.0; dy= -18.0; width=177.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Valley Milestone Glide"; pattern="ZONE_MILESTONE"; is_milestone=true  # L
+		11:  dx=960.0;  dy= +58.0; width=192.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Canyon Lip Drop";       pattern="TERRACED_STEP_DOWN"   # E2
+		12:  dx=1040.0; dy=-142.0; width=141.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="Cliff Face Ascent";     pattern="STEEP_HIGH_RIGHT"     # H1
+		13:  dx=1270.0; dy= +98.0; width=156.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Shelf Recovery";        pattern="TERRACED_STEP_DOWN"   # M2
+		14:  dx=855.0;  dy= +18.0; width=205.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Pedestal Rest";         pattern="SHORT_TECHNICAL_HOP"  # E1
+		15:  dx=1100.0; dy= -78.0; width=171.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Ridge Step Up";         pattern="TERRACED_STEP_UP"     # M1
+		16:  dx=1480.0; dy=-158.0; width=132.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="High Wall Run";         pattern="STEEP_HIGH_RIGHT"     # H2
+		17:  dx=1320.0; dy=+112.0; width=153.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Deep Settle";           pattern="DEEP_LOW_RIGHT"       # M2
+		18:  dx=895.0;  dy= +22.0; width=208.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Valley Rest";           pattern="RECOVERY_PAD"         # R
+		19:  dx=1130.0; dy=-128.0; width=143.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Crest Climb";           pattern="STEEP_HIGH_RIGHT"     # H1
+		20:  dx=2250.0; dy= +18.0; width=175.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Solar Valley Milestone"; pattern="ZONE_MILESTONE"; is_milestone=true  # L
 
 		# ══════════════════════════════════════════════════════════════════════
-		# ZONE 1: SOLAR CRATERS (Pads 21–40)
-		# Macro neighbourhood: Y≈380–760 (enter rim, descend to basin, climb back)
+		# ZONE 1 — SOLAR CRATERS (Pads 21–40)
+		# Tier sequence: E2·M1·H1·E2·M2·H2·L·R·H1·L · E2·H2·M1·H1·M2·R·M2·H2·M1·L
+		# Recovery pads: 28 (R), 36 (R)
 		# ══════════════════════════════════════════════════════════════════════
-
-		# ── SCENE 05: Crater Rim (Pads 21–25) ──────────────────────────────
-		# Step onto rim, rim-hop, short drop into outer bowl.
-		# Silhouette: ●─ ●\ ─● ●─ \────●
-		21: dx = 860.0;  dy =  50.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Crater Rim Entry";         pattern = "TERRACED_STEP_DOWN"
-		22: dx = 1100.0; dy =  90.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Rim Wall Descent";         pattern = "DEEP_LOW_RIGHT"
-		23: dx = 960.0;  dy =  15.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Rim Ledge Rest";           pattern = "RECOVERY_PAD"
-		24: dx = 840.0;  dy = -20.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Crater Rim Pillar";        pattern = "SHORT_TECHNICAL_HOP"
-		25: dx = 1480.0; dy =  120.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Outer Bowl Drop";          pattern = "DEEP_LOW_RIGHT"
-
-		# ── SCENE 06: Outer Crater (Pads 26–30) ────────────────────────────
-		# Broad descent into bowl → flat basin sprint → central peak ascent.
-		# Silhouette: \● ────────────● ─● /● ────────/●
-		26: dx = 1100.0; dy =  110.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Bowl Descent";             pattern = "TERRACED_STEP_DOWN"
-		27: dx = 2250.0; dy =  25.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Crater Basin Long Glide";  pattern = "LONG_GLIDE"
-		28: dx = 920.0;  dy =  10.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Basin Floor Rest";         pattern = "RECOVERY_PAD"
-		29: dx = 1060.0; dy = -130.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Central Peak Crest";       pattern = "STEEP_HIGH_RIGHT"
-		30: dx = 2300.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Central Spire Apex";       pattern = "ZONE_MILESTONE"; is_milestone = true
-
-		# ── SCENE 07: Deep Basin (Pads 31–35) ──────────────────────────────
-		# Rest on peak → trench plunge → basin floor sprint → monolith hop → ejecta traverse.
-		# Silhouette: ─● \────● ─────────● ─● ──────────●
-		31: dx = 860.0;  dy =  20.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Crater Peak Rest";         pattern = "RECOVERY_PAD"
-		32: dx = 1380.0; dy =  150.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Trench Plunge";            pattern = "DEEP_LOW_RIGHT"
-		33: dx = 1450.0; dy = -10.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Trench Basin Sprint";      pattern = "LEVEL_SPRINT"
-		34: dx = 840.0;  dy = -30.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Basin Monolith Hop";       pattern = "SHORT_TECHNICAL_HOP"
-		35: dx = 1600.0; dy = -55.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Ejecta Field Traverse";    pattern = "RETRO_BRAKE"
-
-		# ── SCENE 08: Far Rim (Pads 36–40) ─────────────────────────────────
-		# Escarpment terrace step-up → steep rimward climb → rim rest → retro-brake exit.
-		# Silhouette: /● /● ─● ──────● ──────────●
-		36: dx = 980.0;  dy = -110.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Far Wall Terraces";        pattern = "TERRACED_STEP_UP"
-		37: dx = 940.0;  dy = -145.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Rimward Escarpment";       pattern = "STEEP_HIGH_RIGHT"
-		38: dx = 960.0;  dy =  10.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Crater Rim Sanctuary";     pattern = "RECOVERY_PAD"
-		39: dx = 1550.0; dy = -55.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Outer Rampart Run";        pattern = "RETRO_BRAKE"
-		40: dx = 2350.0; dy = -25.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Craters Milestone";  pattern = "ZONE_MILESTONE"; is_milestone = true
+		21:  dx=950.0;  dy= +48.0; width=193.0; motif=SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter="Rim Approach";          pattern="TERRACED_STEP_DOWN"   # E2
+		22:  dx=1150.0; dy= +88.0; width=168.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Outer Wall Slope";      pattern="TERRACED_STEP_DOWN"   # M1
+		23:  dx=1070.0; dy=+155.0; width=139.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Interior Drop";         pattern="DEEP_LOW_RIGHT"       # H1
+		24:  dx=920.0;  dy= -42.0; width=195.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Ledge Hop Back";        pattern="SHORT_TECHNICAL_HOP"  # E2
+		25:  dx=1420.0; dy=+128.0; width=154.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Deep Bowl Entry";       pattern="DEEP_LOW_RIGHT"       # M2
+		26:  dx=1620.0; dy=+168.0; width=128.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Basin Plunge";          pattern="DEEP_LOW_RIGHT"       # H2
+		27:  dx=2250.0; dy= +22.0; width=178.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Basin Long Glide";      pattern="LONG_GLIDE"           # L
+		28:  dx=900.0;  dy= +12.0; width=208.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Basin Rest";            pattern="RECOVERY_PAD"         # R
+		29:  dx=1080.0; dy=-145.0; width=140.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Peak Assault";          pattern="STEEP_HIGH_RIGHT"     # H1
+		30:  dx=2300.0; dy= -48.0; width=174.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="Spire Milestone";       pattern="ZONE_MILESTONE"; is_milestone=true  # L
+		31:  dx=930.0;  dy= +20.0; width=196.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Peak Plateau";          pattern="RECOVERY_PAD"         # E2
+		32:  dx=1400.0; dy=+162.0; width=126.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Trench Plunge";         pattern="DEEP_LOW_RIGHT"       # H2
+		33:  dx=1460.0; dy= -12.0; width=168.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Trench Sprint";         pattern="LEVEL_SPRINT"         # M1
+		34:  dx=960.0;  dy=-135.0; width=141.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="Trench Climb";          pattern="STEEP_HIGH_RIGHT"     # H1
+		35:  dx=1580.0; dy= -58.0; width=155.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Ejecta Traverse";       pattern="RETRO_BRAKE"          # M2
+		36:  dx=880.0;  dy= +18.0; width=207.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Rim Rest";              pattern="RECOVERY_PAD"         # R
+		37:  dx=1200.0; dy=-108.0; width=157.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Wall Terraces";         pattern="TERRACED_STEP_UP"     # M2
+		38:  dx=1380.0; dy=-148.0; width=129.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Escarpment Climb";      pattern="STEEP_HIGH_RIGHT"     # H2
+		39:  dx=1540.0; dy= -52.0; width=169.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="Rampart Run";           pattern="RETRO_BRAKE"          # M1
+		40:  dx=2350.0; dy= -28.0; width=174.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Craters Milestone";     pattern="ZONE_MILESTONE"; is_milestone=true  # L
 
 		# ══════════════════════════════════════════════════════════════════════
-		# ZONE 2: SOLAR MOUNTAINS (Pads 41–60)
-		# Macro neighbourhood: Y≈60–400 (foothills → summit → couloir → pass)
+		# ZONE 2 — SOLAR MOUNTAINS (Pads 41–60)
+		# Tier sequence: M1·H2·E2·M2·H1·M1·H2·R·H1·L · E2·H2·M1·H1·H2·R·M2·M1·H1·L
+		# Recovery pads: 48 (R), 56 (R)
 		# ══════════════════════════════════════════════════════════════════════
-
-		# ── SCENE 09: Mountain Base (Pads 41–45) ────────────────────────────
-		# Foothills approach → sheer cliff face → alpine shoulder → terrace rest → crevasse needle.
-		# Silhouette: ─● /● ●\ ─● ─●
-		41: dx = 1100.0; dy = -100.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Massif Base Climb";        pattern = "TERRACED_STEP_UP"
-		42: dx = 920.0;  dy = -155.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Sheer Cliff Face";         pattern = "STEEP_HIGH_RIGHT"
-		43: dx = 1200.0; dy =  30.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Alpine Shoulder Dip";      pattern = "TERRACED_STEP_DOWN"
-		44: dx = 960.0;  dy = -15.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Alpine Terrace Rest";      pattern = "RECOVERY_PAD"
-		45: dx = 880.0;  dy = -40.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Crevasse Needle";          pattern = "SHORT_TECHNICAL_HOP"
-
-		# ── SCENE 10: Sheer Ascent (Pads 46–50) ─────────────────────────────
-		# Glacier arête → summit push → summit rest → apex col corridor → milestone bastion.
-		# Silhouette: /● /● ─● ──────● ──────────────●
-		46: dx = 1050.0; dy = -105.0; motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Glacier Arête";            pattern = "TERRACED_STEP_UP"
-		47: dx = 950.0;  dy = -150.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Summit Horn Push";         pattern = "STEEP_HIGH_RIGHT"
-		48: dx = 940.0;  dy =  45.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Summit Serac Rest";        pattern = "RECOVERY_PAD"
-		49: dx = 1680.0; dy = -80.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Apex Col Corridor";        pattern = "RETRO_BRAKE"
-		50: dx = 2400.0; dy = -25.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Solar Summit Bastion";     pattern = "ZONE_MILESTONE"; is_milestone = true
-
-		# ── SCENE 11: Summit & Couloir (Pads 51–55) ─────────────────────────
-		# Summit shelf → big couloir plunge → floor sprint → frost spire hop → second drop.
-		# Silhouette: ─● \──────● ───────────● ─● \──────●
-		51: dx = 880.0;  dy =  10.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Summit Shelf";             pattern = "RECOVERY_PAD"
-		52: dx = 1380.0; dy =  180.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Couloir Plunge";           pattern = "DEEP_LOW_RIGHT"
-		53: dx = 1500.0; dy = -10.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Couloir Floor Sprint";     pattern = "LEVEL_SPRINT"
-		54: dx = 860.0;  dy = -30.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Frost Spire Hop";          pattern = "SHORT_TECHNICAL_HOP"
-		55: dx = 1350.0; dy =  165.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Glacial Gorge Step";       pattern = "DEEP_LOW_RIGHT"
-
-		# ── SCENE 12: Mountain Pass (Pads 56–60) ────────────────────────────
-		# Recovery haven → pass step-up → mesa fall → high-pass retro-brake → milestone exit.
-		# Silhouette: ─● /● \── ──────● ──────────────●
-		56: dx = 940.0;  dy =  10.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Mountain Haven";           pattern = "RECOVERY_PAD"
-		57: dx = 1080.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Pass Ascent Step";         pattern = "TERRACED_STEP_UP"
-		58: dx = 1340.0; dy =  75.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Pass Mesa Fall";           pattern = "TERRACED_STEP_DOWN"
-		59: dx = 1580.0; dy = -45.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "High Pass Brake Run";      pattern = "RETRO_BRAKE"
-		60: dx = 2450.0; dy = -25.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Mountains Milestone"; pattern = "ZONE_MILESTONE"; is_milestone = true
+		41:  dx=1120.0; dy= -98.0; width=172.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Base Approach";          pattern="TERRACED_STEP_UP"     # M1
+		42:  dx=1350.0; dy=-160.0; width=123.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="Cliff Face Assault";    pattern="STEEP_HIGH_RIGHT"     # H2
+		43:  dx=1010.0; dy= +32.0; width=196.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Alpine Dip";            pattern="TERRACED_STEP_DOWN"   # E2
+		44:  dx=1160.0; dy=-118.0; width=156.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Terrace Precision";     pattern="TERRACED_STEP_UP"     # M2
+		45:  dx=920.0;  dy=-138.0; width=138.0; motif=SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter="Crevasse Needle";       pattern="SHORT_TECHNICAL_HOP" # H1
+		46:  dx=1080.0; dy=-102.0; width=169.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Glacier Shelf";         pattern="TERRACED_STEP_UP"     # M1
+		47:  dx=1480.0; dy=-162.0; width=120.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Summit Push";           pattern="STEEP_HIGH_RIGHT"     # H2
+		48:  dx=930.0;  dy= +42.0; width=206.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Summit Rest";           pattern="RECOVERY_PAD"         # R
+		49:  dx=1680.0; dy= -78.0; width=140.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Apex Col";              pattern="RETRO_BRAKE"          # H1 (long+hard)
+		50:  dx=2400.0; dy= -28.0; width=172.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="Summit Milestone";      pattern="ZONE_MILESTONE"; is_milestone=true  # L
+		51:  dx=890.0;  dy= +12.0; width=197.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Summit Shelf";          pattern="RECOVERY_PAD"         # E2
+		52:  dx=1380.0; dy=+182.0; width=121.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Couloir Plunge";        pattern="DEEP_LOW_RIGHT"       # H2
+		53:  dx=1500.0; dy= -12.0; width=168.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Couloir Sprint";        pattern="LEVEL_SPRINT"         # M1
+		54:  dx=870.0;  dy=-128.0; width=136.0; motif=SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter="Frost Spire";           pattern="SHORT_TECHNICAL_HOP" # H1
+		55:  dx=1450.0; dy=+170.0; width=122.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Gorge Step Drop";       pattern="DEEP_LOW_RIGHT"       # H2
+		56:  dx=940.0;  dy= +12.0; width=207.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Mountain Haven";        pattern="RECOVERY_PAD"         # R
+		57:  dx=1200.0; dy= -98.0; width=158.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Pass Ascent";           pattern="TERRACED_STEP_UP"     # M2
+		58:  dx=1360.0; dy= +78.0; width=170.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Pass Mesa Fall";        pattern="TERRACED_STEP_DOWN"   # M1
+		59:  dx=1560.0; dy= -48.0; width=139.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Pass Brake Run";        pattern="RETRO_BRAKE"          # H1
+		60:  dx=2450.0; dy= -28.0; width=173.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Mountains Milestone";   pattern="ZONE_MILESTONE"; is_milestone=true  # L
 
 		# ══════════════════════════════════════════════════════════════════════
-		# ZONE 3: SOLAR RUINS (Pads 61–80)
-		# Macro neighbourhood: Y≈80–600 (colonnade → sunken forum → monuments → pyramid)
+		# ZONE 3 — SOLAR RUINS (Pads 61–80)
+		# Tier sequence: M1·H2·R·M2·H2·L·M1·H1·R·L · E2·H2·M1·H1·M2·M1·H2·R·H1·L
+		# Recovery pads: 63 (R), 69 (R), 78 (R)
 		# ══════════════════════════════════════════════════════════════════════
-
-		# ── SCENE 13: Ruined Approach (Pads 61–65) ──────────────────────────
-		# Colonnade drop → sunken vault deeper → sanctum rest → pillar hop → colosseum plunge.
-		# Silhouette: ●\ \──● ─● ─● \──────────●
-		61: dx = 1250.0; dy =  100.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Colonnade Descent";        pattern = "TERRACED_STEP_DOWN"
-		62: dx = 1380.0; dy =  175.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Sunken Vault Abyss";       pattern = "DEEP_LOW_RIGHT"
-		63: dx = 980.0;  dy =  15.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Sanctum Terrace";          pattern = "RECOVERY_PAD"
-		64: dx = 860.0;  dy = -20.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Pillar Pedestal Hop";      pattern = "SHORT_TECHNICAL_HOP"
-		65: dx = 1350.0; dy =  170.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Colosseum Floor Drop";     pattern = "DEEP_LOW_RIGHT"
-
-		# ── SCENE 14: Sunken Forum (Pads 66–70) ─────────────────────────────
-		# Arena sprint → amphitheatre long glide → forum rest → pyramid spire ascent → milestone.
-		# Silhouette: ──────● ──────────────────● ─● /● ──────────────●
-		66: dx = 1700.0; dy =  35.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Arena Corridor Sprint";    pattern = "RETRO_BRAKE"
-		67: dx = 2350.0; dy =  20.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Grand Amphitheatre Glide"; pattern = "LONG_GLIDE"
-		68: dx = 940.0;  dy = -10.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Sunken Forum Rest";        pattern = "RECOVERY_PAD"
-		69: dx = 950.0;  dy = -155.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Pyramid Spire Crest";      pattern = "STEEP_HIGH_RIGHT"
-		70: dx = 2450.0; dy = -30.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Megalithic Pyramid Summit"; pattern = "ZONE_MILESTONE"; is_milestone = true
-
-		# ── SCENE 15: Monument Field (Pads 71–75) ────────────────────────────
-		# Upper bastion rest → catacomb chasm drop → vault esplanade sprint → monolith hop → avenue brake.
-		# Silhouette: ─● \──────● ─────────── ─● ──────────●
-		71: dx = 900.0;  dy =  15.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Upper Bastion Haven";      pattern = "RECOVERY_PAD"
-		72: dx = 1420.0; dy =  140.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Catacomb Chasm Drop";      pattern = "DEEP_LOW_RIGHT"
-		73: dx = 1520.0; dy = -10.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Vault Esplanade Sprint";   pattern = "LEVEL_SPRINT"
-		74: dx = 850.0;  dy = -35.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Monolith Shelf Hop";       pattern = "SHORT_TECHNICAL_HOP"
-		75: dx = 1680.0; dy = -55.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Avenue of Sphinxes";       pattern = "RETRO_BRAKE"
-
-		# ── SCENE 16: Pyramid Terraces (Pads 76–80) ─────────────────────────
-		# Apex tier step-up → temple spire ascent → altar rest → threshold brake → milestone exit.
-		# Silhouette: /● /● ─● ──────● ──────────●
-		76: dx = 1080.0; dy = -100.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Apex Tier Rise";           pattern = "TERRACED_STEP_UP"
-		77: dx = 940.0;  dy = -145.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Temple Spire Crest";       pattern = "STEEP_HIGH_RIGHT"
-		78: dx = 960.0;  dy =  10.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Altar Sanctuary";          pattern = "RECOVERY_PAD"
-		79: dx = 1620.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Threshold Approach Run";   pattern = "RETRO_BRAKE"
-		80: dx = 2450.0; dy = -25.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Ruins Milestone";    pattern = "ZONE_MILESTONE"; is_milestone = true
+		61:  dx=1180.0; dy= +92.0; width=170.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="Colonnade Entry";       pattern="TERRACED_STEP_DOWN"   # M1
+		62:  dx=1540.0; dy=+178.0; width=122.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Sunken Vault Drop";     pattern="DEEP_LOW_RIGHT"       # H2
+		63:  dx=960.0;  dy= +18.0; width=208.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Sanctum Rest";          pattern="RECOVERY_PAD"         # R
+		64:  dx=1080.0; dy=-108.0; width=157.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Pillar Ascent";         pattern="TERRACED_STEP_UP"     # M2
+		65:  dx=1460.0; dy=+168.0; width=124.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Colosseum Drop";        pattern="DEEP_LOW_RIGHT"       # H2
+		66:  dx=1920.0; dy= +32.0; width=178.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Arena Long Sprint";     pattern="LONG_GLIDE"           # L
+		67:  dx=1080.0; dy= -22.0; width=170.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Amphitheatre Shelf";    pattern="LEVEL_SPRINT"         # M1
+		68:  dx=1020.0; dy=-148.0; width=136.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Pyramid Ascent";        pattern="STEEP_HIGH_RIGHT"     # H1
+		69:  dx=910.0;  dy= -12.0; width=208.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Forum Rest";            pattern="RECOVERY_PAD"         # R
+		70:  dx=2450.0; dy= -28.0; width=173.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="Pyramid Milestone";     pattern="ZONE_MILESTONE"; is_milestone=true  # L
+		71:  dx=950.0;  dy= +18.0; width=196.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Bastion Drop";          pattern="SHORT_TECHNICAL_HOP" # E2
+		72:  dx=1400.0; dy=+145.0; width=122.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Catacomb Plunge";       pattern="DEEP_LOW_RIGHT"       # H2
+		73:  dx=1520.0; dy= -12.0; width=170.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Vault Sprint";          pattern="LEVEL_SPRINT"         # M1
+		74:  dx=980.0;  dy=-138.0; width=136.0; motif=SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter="Monolith Climb";        pattern="STEEP_HIGH_RIGHT"     # H1
+		75:  dx=1620.0; dy= -58.0; width=156.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Avenue Traverse";       pattern="RETRO_BRAKE"          # M2
+		76:  dx=1120.0; dy= -98.0; width=172.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Terrace Step";          pattern="TERRACED_STEP_UP"     # M1
+		77:  dx=1360.0; dy=-155.0; width=124.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Temple Spire";          pattern="STEEP_HIGH_RIGHT"     # H2
+		78:  dx=950.0;  dy= +12.0; width=208.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Altar Rest";            pattern="RECOVERY_PAD"         # R
+		79:  dx=1580.0; dy= -52.0; width=138.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="Threshold Run";         pattern="RETRO_BRAKE"          # H1
+		80:  dx=2450.0; dy= -28.0; width=173.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Ruins Milestone";       pattern="ZONE_MILESTONE"; is_milestone=true  # L
 
 		# ══════════════════════════════════════════════════════════════════════
-		# ZONE 4: SOLAR CORE (Pads 81–100)
-		# Macro neighbourhood: Y≈-200–300 (caldera → plasma valley → dramatic ascent → apex)
+		# ZONE 4 — SOLAR CORE (Pads 81–100)
+		# Tier sequence: M2·H2·E2·H1·M2·H2·L·R·H2·L · E2·H1·M2·H2·M1·H2·M2·R·H1·L
+		# Recovery pads: 88 (R), 98 (R)
 		# ══════════════════════════════════════════════════════════════════════
-
-		# ── SCENE 17: Caldera Rim (Pads 81–85) ──────────────────────────────
-		# Rim uplift → plasma column ascent → shoulder dip recovery → basalt haven → flare pedestal.
-		# Silhouette: /● /● ●\ ─● ─●
-		81: dx = 1150.0; dy = -100.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Caldera Rim Uplift";       pattern = "TERRACED_STEP_UP"
-		82: dx = 950.0;  dy = -155.0; motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Plasma Column Ascent";     pattern = "STEEP_HIGH_RIGHT"
-		83: dx = 1250.0; dy =  65.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Plasma Shoulder Dip";      pattern = "TERRACED_STEP_DOWN"
-		84: dx = 980.0;  dy = -20.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Basalt Haven Rest";        pattern = "RECOVERY_PAD"
-		85: dx = 870.0;  dy = -35.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Solar Flare Pedestal";     pattern = "SHORT_TECHNICAL_HOP"
-
-		# ── SCENE 18: Plasma Valley (Pads 86–90) ─────────────────────────────
-		# Molten plains sprint → corona sea long glide → shoulder rest → core spire ascent → milestone.
-		# Silhouette: ──────● ──────────────────● ─● /● ──────────────●
-		86: dx = 1700.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Molten Plains Sprint";     pattern = "RETRO_BRAKE"
-		87: dx = 2400.0; dy = -10.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Corona Sea Traverse";      pattern = "LONG_GLIDE"
-		88: dx = 940.0;  dy =  35.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Plasma Shoulder Rest";     pattern = "RECOVERY_PAD"
-		89: dx = 960.0;  dy = -150.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Core Spire Ascent";        pattern = "STEEP_HIGH_RIGHT"
-		90: dx = 2450.0; dy = -25.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Solar Core Spire Summit";  pattern = "ZONE_MILESTONE"; is_milestone = true
-
-		# ── SCENE 19: Core Ascent (Pads 91–95) ───────────────────────────────
-		# Corona terrace recovery → corona step-up → threshold sprint → monolith hop → final ascent step.
-		# Silhouette: ─● /● ──────● ─● /●
-		91: dx = 920.0;  dy =  10.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Corona Terrace Haven";     pattern = "RECOVERY_PAD"
-		92: dx = 1100.0; dy = -90.0;  motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Corona Steps";             pattern = "TERRACED_STEP_UP"
-		93: dx = 1500.0; dy = -20.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Threshold Terrace Sprint"; pattern = "LEVEL_SPRINT"
-		94: dx = 870.0;  dy = -40.0;  motif = SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter = "Threshold Monolith Hop";   pattern = "SHORT_TECHNICAL_HOP"
-		95: dx = 1120.0; dy = -100.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Final Ascent Step";        pattern = "TERRACED_STEP_UP"
-
-		# ── SCENE 20: Solar Core Apex (Pads 96–100) ──────────────────────────
-		# Pinnacle spire → apex terrace settle → solar sanctum → final corridor → SOLAR CORE APEX.
-		# Silhouette: /● ●\ ─● ──────● ──────────●
-		96: dx = 940.0;  dy = -135.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Pinnacle Spire Ascent";    pattern = "STEEP_HIGH_RIGHT"
-		97: dx = 1320.0; dy =  40.0;  motif = SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter = "Apex Terrace Settle";      pattern = "TERRACED_STEP_DOWN"
-		98: dx = 980.0;  dy = -10.0;  motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Solar Sanctum";            pattern = "RECOVERY_PAD"
-		99: dx = 1650.0; dy = -50.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter = "Final Approach Corridor";  pattern = "RETRO_BRAKE"
-		100: dx = 2450.0; dy = -25.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "THE SOLAR CORE APEX";      pattern = "ZONE_MILESTONE"; is_milestone = true
+		81:  dx=1200.0; dy=-102.0; width=157.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Caldera Rise";           pattern="TERRACED_STEP_UP"     # M2
+		82:  dx=1280.0; dy=-158.0; width=122.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="Plasma Column";         pattern="STEEP_HIGH_RIGHT"     # H2
+		83:  dx=980.0;  dy= +62.0; width=194.0; motif=SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter="Shoulder Dip";          pattern="TERRACED_STEP_DOWN"   # E2
+		84:  dx=1060.0; dy=-132.0; width=138.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Return Climb";          pattern="STEEP_HIGH_RIGHT"     # H1
+		85:  dx=1340.0; dy=-108.0; width=155.0; motif=SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter="Flare Pedestal";        pattern="TERRACED_STEP_UP"     # M2
+		86:  dx=1660.0; dy= -52.0; width=124.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Molten Sprint";         pattern="RETRO_BRAKE"          # H2
+		87:  dx=2400.0; dy= -12.0; width=177.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Corona Glide";          pattern="LONG_GLIDE"           # L
+		88:  dx=940.0;  dy= +38.0; width=207.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Plasma Rest";           pattern="RECOVERY_PAD"         # R
+		89:  dx=1480.0; dy=-162.0; width=120.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Core Spire";            pattern="STEEP_HIGH_RIGHT"     # H2
+		90:  dx=2450.0; dy= -28.0; width=173.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="Core Milestone";        pattern="ZONE_MILESTONE"; is_milestone=true  # L
+		91:  dx=920.0;  dy= +12.0; width=196.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Corona Terrace";        pattern="SHORT_TECHNICAL_HOP" # E2
+		92:  dx=1120.0; dy=-142.0; width=136.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Corona Steps";          pattern="STEEP_HIGH_RIGHT"     # H1
+		93:  dx=1480.0; dy= -22.0; width=156.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Threshold Sprint";      pattern="LEVEL_SPRINT"         # M2
+		94:  dx=1380.0; dy=-138.0; width=121.0; motif=SolarTerrainGenerator.FormationType.CRATER_RIM;    chapter="Monolith Hard";         pattern="SHORT_TECHNICAL_HOP" # H2
+		95:  dx=1060.0; dy= -98.0; width=170.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Ascent Step";           pattern="TERRACED_STEP_UP"     # M1
+		96:  dx=1520.0; dy=-145.0; width=120.0; motif=SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter="Pinnacle Assault";      pattern="STEEP_HIGH_RIGHT"     # H2
+		97:  dx=1300.0; dy= +42.0; width=157.0; motif=SolarTerrainGenerator.FormationType.VALLEY_SHELF;  chapter="Apex Settle";           pattern="TERRACED_STEP_DOWN"   # M2
+		98:  dx=960.0;  dy= -12.0; width=208.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="Final Sanctum";         pattern="RECOVERY_PAD"         # R
+		99:  dx=1420.0; dy= -52.0; width=140.0; motif=SolarTerrainGenerator.FormationType.CLIFF_RIGHT;   chapter="Final Corridor";        pattern="RETRO_BRAKE"          # H1
+		100: dx=2450.0; dy= -28.0; width=175.0; motif=SolarTerrainGenerator.FormationType.MESA;          chapter="THE SOLAR CORE APEX";   pattern="ZONE_MILESTONE"; is_milestone=true  # L
 
 		_:
 			# Endless play beyond Pad 100
 			var cycle = idx % 10
 			if cycle < 3:
-				dx = 1100.0; dy = -150.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Deep Space Crest"; pattern = "STEEP_HIGH_RIGHT"
+				dx = 1100.0; dy = -150.0; width = 145.0; motif = SolarTerrainGenerator.FormationType.MOUNTAIN_PEAK; chapter = "Deep Space Crest"; pattern = "STEEP_HIGH_RIGHT"
 			elif cycle < 6:
-				dx = 1400.0; dy = 180.0;  motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT; chapter = "Cosmic Chasm";       pattern = "DEEP_LOW_RIGHT"
+				dx = 1400.0; dy = 180.0;  width = 128.0; motif = SolarTerrainGenerator.FormationType.CLIFF_LEFT;    chapter = "Cosmic Chasm";      pattern = "DEEP_LOW_RIGHT"
 			elif cycle < 8:
-				dx = 920.0;  dy = 0.0;    motif = SolarTerrainGenerator.FormationType.MESA; chapter = "Cosmic Haven";              pattern = "RECOVERY_PAD"
+				dx = 920.0;  dy = 0.0;    width = 205.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Cosmic Haven";      pattern = "RECOVERY_PAD"
 			else:
-				dx = 2400.0; dy = -20.0;  motif = SolarTerrainGenerator.FormationType.MESA; chapter = "Stellar Expanse";          pattern = "LONG_GLIDE"
+				dx = 2400.0; dy = -20.0;  width = 175.0; motif = SolarTerrainGenerator.FormationType.MESA;          chapter = "Stellar Expanse";   pattern = "LONG_GLIDE"
 
 	return {
 		"dx": dx,
 		"dy": dy,
+		"width": width,
 		"motif": motif,
 		"chapter": chapter,
 		"pattern": pattern,
@@ -330,11 +258,12 @@ func spawn_next_route_pad() -> SolarPlatform:
 	var req_dy: float = bp.dy
 	var is_milestone: bool = bp.is_milestone or SunZoneData.is_zone_boundary(next_platform_idx)
 
-	var best_width: float = randf_range(zone.get("width_min", 140.0), zone.get("width_max", 175.0))
+	# Use per-pad authored width from blueprint. Recovery/milestone overrides preserved for safety.
+	var best_width: float = bp.get("width", randf_range(zone.get("width_min", 140.0), zone.get("width_max", 175.0)))
 	if bp.pattern == "RECOVERY_PAD":
-		best_width = 200.0  # Generous relief pad width (190-210)
+		best_width = maxf(best_width, 200.0)  # Recovery pads always at least 200px
 	elif is_milestone or next_platform_idx == SunZoneData.TOTAL_PADS:
-		best_width = 210.0  # Celebratory wide milestone platform
+		best_width = maxf(best_width, 175.0)  # Milestone pads never narrower than 175px
 
 	# ─── Numerical Trajectory Simulator Reachability Verification ─────────────
 	# Replaces naive formula with numerical Euler flight simulation.
