@@ -798,9 +798,22 @@ func build_canyon_segment(pad_a: SolarPlatform, pad_b: SolarPlatform, motif: For
 
 	var dx = shelf_bl - start_x
 	var max_y = maxf(footing_ya, footing_yb)
-	# Fix 4: Scale dip with gap distance so long glides show dramatically deeper gorges.
-	# Previously capped at 95px — now scales up to 220px for long milestone flights.
-	var dip = clampf(dx * 0.10, 55.0, 220.0)
+
+	# Tailor dip depth per motif so gorges feel distinct and appropriate
+	var dip: float = 60.0
+	match motif:
+		FormationType.MESA:
+			dip = clampf(dx * 0.05, 30.0, 65.0)
+		FormationType.CRATER_RIM:
+			dip = clampf(dx * 0.08, 40.0, 120.0)
+		FormationType.VALLEY_SHELF:
+			dip = clampf(dx * 0.12, 60.0, 220.0)
+		FormationType.CLIFF_LEFT, FormationType.CLIFF_RIGHT:
+			dip = clampf(dx * 0.10, 50.0, 180.0)
+		FormationType.MOUNTAIN_PEAK:
+			dip = clampf(dx * 0.10, 55.0, 180.0)
+		_:
+			dip = clampf(dx * 0.08, 45.0, 150.0)
 
 	var surface_points: PackedVector2Array = []
 	surface_points.append(Vector2(start_x, footing_ya))
@@ -826,12 +839,14 @@ func build_canyon_segment(pad_a: SolarPlatform, pad_b: SolarPlatform, motif: For
 			surface_points.append(Vector2(shelf_bl - 22.0, footing_yb + 22.0))
 
 		FormationType.MOUNTAIN_PEAK:
-			# Terrain rises to a narrow ridge crest in the middle — steep both sides
-			var ridge_y = minf(footing_ya, footing_yb) - dip * 0.45  # Ridge ABOVE both pads
-			surface_points.append(Vector2(start_x + dx * 0.18, footing_ya + dip * 0.20))
-			surface_points.append(Vector2(start_x + dx * 0.38, ridge_y + dip * 0.30))
-			surface_points.append(Vector2(start_x + dx * 0.50, ridge_y))              # Narrow ridge crest
-			surface_points.append(Vector2(start_x + dx * 0.62, ridge_y + dip * 0.30))
+			# Terrain dips into flanking gorges, with a prominent central ridge crest between them.
+			# CRITICAL COLLISION SAFETY: ridge_y stays safely below pad footings so it never obstructs flight.
+			var ridge_y = max_y + 35.0
+			var floor_y = max_y + dip
+			surface_points.append(Vector2(start_x + dx * 0.18, footing_ya + dip * 0.35))
+			surface_points.append(Vector2(start_x + dx * 0.32, floor_y * 0.88 + ridge_y * 0.12))
+			surface_points.append(Vector2(start_x + dx * 0.50, ridge_y))              # Central ridge crest
+			surface_points.append(Vector2(start_x + dx * 0.68, floor_y * 0.88 + ridge_y * 0.12))
 			surface_points.append(Vector2(shelf_bl - 55.0, footing_yb + 55.0))
 			surface_points.append(Vector2(shelf_bl - 22.0, footing_yb + 20.0))
 

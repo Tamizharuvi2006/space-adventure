@@ -39,6 +39,7 @@ func _ready() -> void:
 	hud.pause_game_requested.connect(_on_pause_game_requested)
 	hud.resume_game_requested.connect(_on_resume_game_requested)
 	hud.retry_game_requested.connect(_on_retry_game_requested)
+	hud.restart_game_requested.connect(_on_restart_game_requested)
 	hud.home_game_requested.connect(_on_home_game_requested)
 	
 	player.landed_safely.connect(_on_player_landed)
@@ -159,7 +160,7 @@ func go_to_main_menu() -> void:
 		camera.set_process(true)
 	
 	restore_checkpoint_state(current_checkpoint)
-	hud.show_main_menu(best_pad)
+	hud.show_main_menu(best_pad, current_checkpoint)
 	current_state = GameState.MAIN_MENU
 	player.set_control_enabled(false)
 	print("[GAME_STATE] Transitioned to MAIN_MENU")
@@ -213,6 +214,26 @@ func _on_retry_game_requested() -> void:
 		music_manager.on_resume()
 	_start_countdown_and_play()
 	print("[GAME_STATE] Retried from checkpoint PAD %d -> targeting PAD %d" % [current_checkpoint, current_checkpoint + 1])
+
+func _on_restart_game_requested() -> void:
+	get_tree().paused = false
+	hud.hide_pause_menu()
+	hud.hide_game_over()
+	current_checkpoint = 1
+	current_pad = 1
+	consecutive_perfects = 0
+	has_shown_journey_complete = false
+	save_game_progress()
+	
+	world_gen.initialize_world(player)
+	restore_checkpoint_state(1)
+	
+	if music_manager:
+		music_manager.on_resume()
+		music_manager.on_zone_changed(0)
+		
+	_start_countdown_and_play()
+	print("[GAME_STATE] Restarted journey from PAD 1!")
 
 func _on_home_game_requested() -> void:
 	if music_manager:

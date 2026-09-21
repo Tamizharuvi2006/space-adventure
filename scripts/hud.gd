@@ -5,6 +5,7 @@ signal play_game_requested
 signal pause_game_requested
 signal resume_game_requested
 signal retry_game_requested
+signal restart_game_requested
 signal home_game_requested
 
 # UI sections
@@ -44,6 +45,7 @@ var indicator_label: Label = null
 # Menu components
 @onready var menu_best_label: Label = $MainMenu/VBox/MenuBestLabel
 @onready var play_button: Button = $MainMenu/VBox/PlayButton
+@onready var menu_restart_button: Button = $MainMenu/VBox.get_node_or_null("MenuRestartButton")
 @onready var resume_button: Button = $PauseMenu/VBox/ResumeButton
 @onready var pause_retry_button: Button = $PauseMenu/VBox/PauseRetryButton
 @onready var pause_home_button: Button = $PauseMenu/VBox/PauseHomeButton
@@ -85,7 +87,9 @@ func _ready() -> void:
 	play_button.pressed.connect(func(): _play_ui_click(); emit_signal("play_game_requested"))
 	pause_button.pressed.connect(func(): _play_ui_click(); emit_signal("pause_game_requested"))
 	resume_button.pressed.connect(func(): _play_ui_click(); emit_signal("resume_game_requested"))
-	pause_retry_button.pressed.connect(func(): _play_ui_click(); emit_signal("retry_game_requested"))
+	pause_retry_button.pressed.connect(func(): _play_ui_click(); emit_signal("restart_game_requested"))
+	if menu_restart_button:
+		menu_restart_button.pressed.connect(func(): _play_ui_click(); emit_signal("restart_game_requested"))
 	pause_home_button.pressed.connect(func(): _play_ui_click(); emit_signal("home_game_requested"))
 	game_over_retry_button.pressed.connect(func(): _play_ui_click(); emit_signal("retry_game_requested"))
 	game_over_home_button.pressed.connect(func(): _play_ui_click(); emit_signal("home_game_requested"))
@@ -434,11 +438,19 @@ func _update_offscreen_indicator(delta: float) -> void:
 	else:
 		offscreen_indicator.modulate.a = move_toward(offscreen_indicator.modulate.a, 0.0, 8.0 * delta)
 
-func show_main_menu(best_pad_count: int) -> void:
+func show_main_menu(best_pad_count: int, checkpoint_idx: int = 1) -> void:
 	clear_touch_inputs()
 	main_menu.visible = true
 	main_menu.modulate.a = 1.0
 	menu_best_label.text = "BEST PAD %d" % best_pad_count
+	if checkpoint_idx > 1:
+		play_button.text = "▶ CONTINUE (PAD %d)" % checkpoint_idx
+		if menu_restart_button:
+			menu_restart_button.visible = true
+	else:
+		play_button.text = "▶ PLAY"
+		if menu_restart_button:
+			menu_restart_button.visible = false
 	
 	gameplay_hud.visible = false
 	pause_menu.visible = false

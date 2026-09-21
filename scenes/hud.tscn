@@ -644,6 +644,18 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_primary_pressed")
 theme_override_font_sizes/font_size = 22
 text = "▶ PLAY"
 
+[node name="MenuRestartButton" type="Button" parent="MainMenu/VBox"]
+visible = false
+custom_minimum_size = Vector2(230, 48)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_secondary_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_secondary_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_secondary_pressed")
+theme_override_font_sizes/font_size = 18
+text = "↺ RESTART FROM 1"
+
 [node name="PauseMenu" type="ColorRect" parent="."]
 visible = false
 anchors_preset = 15
@@ -722,7 +734,7 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_btn_secondary_normal")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_secondary_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_secondary_pressed")
 theme_override_font_sizes/font_size = 19
-text = "↺ RETRY"
+text = "↺ RESTART"
 
 [node name="PauseHomeButton" type="Button" parent="PauseMenu/VBox"]
 custom_minimum_size = Vector2(220, 48)
