@@ -26,34 +26,77 @@ var current_zone_idx: int = 0
 var rewind_tween: Tween = null
 var has_shown_journey_complete: bool = false
 
+var _boot_start_time_msec: int = 0
+var _splash_instance: CanvasLayer = null
+
 func _ready() -> void:
-	# Immediately show splash overlay with loading animation on frame 0
-	_start_splash_fade_in()
+	_boot_start_time_msec = Time.get_ticks_msec()
+	print("[BOOT] %d ms - main scene entered" % _get_boot_elapsed_ms())
 	
+	# 1. Spawn splash overlay on frame 0 to cover screen and absorb inputs immediately
+	var splash_script = preload("res://scripts/splash_overlay.gd")
+	_splash_instance = splash_script.new()
+	add_child(_splash_instance)
+	_splash_instance.set_loading_stage(0.10, "INITIALIZING ENGINE")
+	
+	# 2. Keep gameplay controls disabled during initialization
+	player.set_control_enabled(false)
+	current_state = GameState.MAIN_MENU
+	
+	# 3. Run real asynchronous multi-stage initialization
+	_run_startup_sequence()
+
+func _get_boot_elapsed_ms() -> int:
+	return Time.get_ticks_msec() - _boot_start_time_msec
+
+func _run_startup_sequence() -> void:
+	# Yield 1 frame so splash overlay renders immediately on screen
+	await get_tree().process_frame
+	
+	# Phase 1: Save & Preferences (0% -> 25%)
 	load_game_progress()
+	print("[BOOT] %d ms - save loaded (Pad %d, Best %d)" % [_get_boot_elapsed_ms(), current_checkpoint, best_pad])
+	
+	camera.follow_target = player
+	print("[BOOT] %d ms - camera ready" % _get_boot_elapsed_ms())
+	print("[BOOT] %d ms - player ready" % _get_boot_elapsed_ms())
+	if _splash_instance and is_instance_valid(_splash_instance):
+		_splash_instance.set_loading_stage(0.30, "MAPPING SOLAR ROUTE")
+	await get_tree().process_frame
+	
+	# Phase 2: World & Route Initialization (30% -> 55%)
+	world_gen.initialize_world(player)
+	print("[BOOT] %d ms - world initialization" % _get_boot_elapsed_ms())
+	print("[BOOT] %d ms - route initialization" % _get_boot_elapsed_ms())
+	if _splash_instance and is_instance_valid(_splash_instance):
+		_splash_instance.set_loading_stage(0.55, "GENERATING TERRAIN")
+	await get_tree().process_frame
+	
+	# Phase 3: Terrain & Checkpoint State Restoration (55% -> 75%)
+	restore_checkpoint_state(current_checkpoint)
+	print("[BOOT] %d ms - terrain initialization" % _get_boot_elapsed_ms())
+	if _splash_instance and is_instance_valid(_splash_instance):
+		_splash_instance.set_loading_stage(0.75, "CONFIGURING HUD")
+	await get_tree().process_frame
+	
+	# Phase 4: HUD, Bindings & Signals (75% -> 88%)
 	hud.bind_player(player)
 	hud.bind_world_gen(world_gen)
 	
-	# Connect UI signals
-	hud.play_game_requested.connect(_on_play_game_requested)
-	hud.pause_game_requested.connect(_on_pause_game_requested)
-	hud.resume_game_requested.connect(_on_resume_game_requested)
-	hud.retry_game_requested.connect(_on_retry_game_requested)
-	hud.restart_game_requested.connect(_on_restart_game_requested)
-	hud.home_game_requested.connect(_on_home_game_requested)
+	if not hud.play_game_requested.is_connected(_on_play_game_requested):
+		hud.play_game_requested.connect(_on_play_game_requested)
+		hud.pause_game_requested.connect(_on_pause_game_requested)
+		hud.resume_game_requested.connect(_on_resume_game_requested)
+		hud.retry_game_requested.connect(_on_retry_game_requested)
+		hud.restart_game_requested.connect(_on_restart_game_requested)
+		hud.home_game_requested.connect(_on_home_game_requested)
+		
+	if not player.landed_safely.is_connected(_on_player_landed):
+		player.landed_safely.connect(_on_player_landed)
+		player.crashed.connect(_on_player_crashed)
+	print("[BOOT] %d ms - HUD ready" % _get_boot_elapsed_ms())
 	
-	player.landed_safely.connect(_on_player_landed)
-	player.crashed.connect(_on_player_crashed)
-	
-	camera.follow_target = player
-	
-	# World initialization
-	world_gen.initialize_world(player)
-	
-	# Restore saved checkpoint and resume normal playable state
-	restore_checkpoint_state(current_checkpoint)
-
-	# Load saved music volume preference
+	# Phase 5: Audio & Music Preparation (88% -> 95%)
 	if music_manager and has_node("MusicManager"):
 		var save_data = _load_raw_save_data()
 		if save_data.has("music_volume_pct"):
@@ -63,15 +106,27 @@ func _ready() -> void:
 		else:
 			hud.set_music_slider_value(70.0)
 			music_manager.set_music_volume_from_slider(70.0)
+	print("[BOOT] %d ms - music initialization" % _get_boot_elapsed_ms())
+	if _splash_instance and is_instance_valid(_splash_instance):
+		_splash_instance.set_loading_stage(0.95, "FINALIZING SYSTEMS")
+	await get_tree().process_frame
+	
+	# Phase 6: Verify readiness & Pre-warm frame (95% -> 100%)
+	print("[BOOT] %d ms - GAME READY" % _get_boot_elapsed_ms())
+	
+	if _splash_instance and is_instance_valid(_splash_instance):
+		_splash_instance.splash_finished.connect(_on_startup_loading_finished)
+		_splash_instance.finish_loading()
+	else:
+		_on_startup_loading_finished()
 
-func _start_splash_fade_in() -> void:
-	var splash_script = preload("res://scripts/splash_overlay.gd")
-	var splash_instance = splash_script.new()
-	splash_instance.splash_finished.connect(func():
-		if music_manager and music_manager.has_method("play_ambient"):
-			music_manager.play_ambient(2.0)
-	)
-	add_child(splash_instance)
+func _on_startup_loading_finished() -> void:
+	print("[BOOT] %d ms - Splash complete. Enabling gameplay and touch controls." % _get_boot_elapsed_ms())
+	current_state = GameState.PLAYING
+	player.set_control_enabled(true)
+	hud.show_gameplay_hud()
+	if music_manager and music_manager.has_method("play_ambient"):
+		music_manager.play_ambient(2.0)
 
 func restore_checkpoint_state(checkpoint_idx: int) -> void:
 	get_tree().paused = false
@@ -136,11 +191,14 @@ func restore_checkpoint_state(checkpoint_idx: int) -> void:
 	var zone = SunZoneData.get_zone_for_pad(current_checkpoint)
 	hud.update_zone_name(zone["name"])
 	
-	# 7. Restore normal playable state
-	hud.show_gameplay_hud()
-	player.set_control_enabled(true)
-	current_state = GameState.PLAYING
-	print("[CHECKPOINT] Restored playable state at Checkpoint PAD %d (Best: %d)" % [current_checkpoint, best_pad])
+	# 7. Restore normal playable state if not currently running boot splash
+	if _splash_instance != null and is_instance_valid(_splash_instance):
+		player.set_control_enabled(false)
+	else:
+		hud.show_gameplay_hud()
+		player.set_control_enabled(true)
+		current_state = GameState.PLAYING
+	print("[CHECKPOINT] Restored state at Checkpoint PAD %d (Best: %d)" % [current_checkpoint, best_pad])
 
 func _process(_delta: float) -> void:
 	if background and camera:

@@ -2,6 +2,7 @@
 .godot/
 /android/
 extension_api.json
+*.uid
 
 # Keystores & signing keys
 *.keystore
@@ -13,6 +14,7 @@ export_presets.cfg
 *.aab
 *.idsig
 
-# Test captures and visual test previews
+# Test captures and temporary assets
 test_captures/
-
+tests/*.import
+docs/layouts/*.import

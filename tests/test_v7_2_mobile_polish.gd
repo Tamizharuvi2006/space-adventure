@@ -34,8 +34,7 @@ func _run_all_tests() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
 
 	var game = _spawn_fresh_game_instance()
-	await process_frame
-	await process_frame
+	await create_timer(2.6).timeout
 	
 	var hud = game.hud
 	var player = game.player

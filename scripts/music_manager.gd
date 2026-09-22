@@ -57,14 +57,22 @@ func _ready() -> void:
 	add_child(_music_player)
 
 	# 3. Load or generate the 54.86s seamless exploration soundtrack
-	if FileAccess.file_exists(SOUNDTRACK_PATH):
-		_soundtrack_stream = AudioStreamWAV.load_from_file(SOUNDTRACK_PATH)
+	if ResourceLoader.exists(SOUNDTRACK_PATH):
+		_soundtrack_stream = load(SOUNDTRACK_PATH) as AudioStreamWAV
 		if _soundtrack_stream:
 			_soundtrack_stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 			_soundtrack_stream.loop_begin = 0
 			_soundtrack_stream.loop_end = int(LOOP_DURATION_S * SAMPLE_RATE)
 			_music_player.stream = _soundtrack_stream
 			print("[MUSIC] Loaded master sci-fi exploration soundtrack (%.2fs loop)" % _soundtrack_stream.get_length())
+	elif FileAccess.file_exists(SOUNDTRACK_PATH):
+		_soundtrack_stream = AudioStreamWAV.load_from_file(SOUNDTRACK_PATH)
+		if _soundtrack_stream:
+			_soundtrack_stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+			_soundtrack_stream.loop_begin = 0
+			_soundtrack_stream.loop_end = int(LOOP_DURATION_S * SAMPLE_RATE)
+			_music_player.stream = _soundtrack_stream
+			print("[MUSIC] Loaded master sci-fi exploration soundtrack via file I/O (%.2fs loop)" % _soundtrack_stream.get_length())
 	
 	if not _soundtrack_stream:
 		# Fallback: synthesize in background thread without blocking main thread
@@ -77,8 +85,15 @@ func _bg_generate_soundtrack() -> void:
 	call_deferred("_on_soundtrack_generated")
 
 func _on_soundtrack_generated() -> void:
-	if _music_player and _soundtrack_stream and not _music_player.stream:
-		_music_player.stream = _soundtrack_stream
+	if _gen_thread and _gen_thread.is_alive():
+		_gen_thread.wait_to_finish()
+	if _music_player and _soundtrack_stream:
+		if not _music_player.stream:
+			_music_player.stream = _soundtrack_stream
+		if _is_playing and not _music_player.playing:
+			_music_player.volume_db = -80.0
+			_music_player.play()
+			_fade_volume_to(_base_volume_db, 2.0)
 	print("[MUSIC] Soundtrack synthesized in background (%.2fs loop)" % [
 		_soundtrack_stream.get_length() if _soundtrack_stream else 0.0
 	])
@@ -89,20 +104,22 @@ func _exit_tree() -> void:
 
 # ─── Public API ──────────────────────────────────────────────────────────────
 
+func is_audio_ready() -> bool:
+	return _soundtrack_stream != null or (_gen_thread == null or not _gen_thread.is_alive())
+
 func play_ambient(fade_duration: float = 2.0) -> void:
 	if _is_playing and _music_player and _music_player.playing:
 		return
-	if _gen_thread and _gen_thread.is_alive():
-		_gen_thread.wait_to_finish()
+	_is_playing = true
 	if _music_player and not _music_player.stream and _soundtrack_stream:
 		_music_player.stream = _soundtrack_stream
-	_is_playing = true
-	_music_player.volume_db = -80.0
-	_music_player.play()
-	_fade_volume_to(_base_volume_db, fade_duration)
-
-	print("[MUSIC] playback started (target: %.1f dB, fade: %.1fs)" % [_base_volume_db, fade_duration])
-	print("[MUSIC] player.playing = %s" % [_music_player.playing])
+	if _music_player and _music_player.stream:
+		_music_player.volume_db = -80.0
+		_music_player.play()
+		_fade_volume_to(_base_volume_db, fade_duration)
+		print("[MUSIC] playback started (target: %.1f dB, fade: %.1fs)" % [_base_volume_db, fade_duration])
+	else:
+		print("[MUSIC] playback queued; will begin smoothly once stream is ready")
 
 func is_playing() -> bool:
 	return _is_playing and _music_player != null and _music_player.playing

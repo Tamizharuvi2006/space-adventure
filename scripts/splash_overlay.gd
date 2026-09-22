@@ -2,14 +2,23 @@ extends CanvasLayer
 
 signal splash_finished
 
+var _root_control: Control
 var _loading_bar: Control
-var _progress: float = 0.0
-var _glow_pulse: float = 1.0
 var _label: Label
+
+var _progress: float = 0.0
+var _target_progress: float = 0.0
+var _glow_pulse: float = 1.0
 
 var _sparkle_angle: float = 0.0
 var _sparks: Array[Dictionary] = []
 var _spark_spawn_timer: float = 0.0
+
+var _elapsed_time: float = 0.0
+var _min_display_time: float = 1.85 # Minimum aesthetic display duration for fast platforms
+var _is_ready_to_finish: bool = false
+var _is_finishing: bool = false
+var _pulse_tween: Tween = null
 
 const BAR_WIDTH: float = 320.0
 const BAR_HEIGHT: float = 3.5
@@ -19,25 +28,26 @@ func _init() -> void:
 
 func _ready() -> void:
 	# 1. Full-screen background and cover texture matching Godot boot splash
-	var root_control = Control.new()
-	root_control.name = "SplashRoot"
-	root_control.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(root_control)
+	_root_control = Control.new()
+	_root_control.name = "SplashRoot"
+	_root_control.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Consume all input events during startup so touches cannot leak through
+	_root_control.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_root_control)
 	
 	var bg_rect = ColorRect.new()
 	bg_rect.color = Color(0, 0, 0, 1.0)
 	bg_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root_control.add_child(bg_rect)
+	bg_rect.mouse_filter = Control.MOUSE_FILTER_STOP
+	_root_control.add_child(bg_rect)
 	
 	var tex_rect = TextureRect.new()
 	tex_rect.texture = preload("res://splash.png")
 	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	tex_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root_control.add_child(tex_rect)
+	tex_rect.mouse_filter = Control.MOUSE_FILTER_STOP
+	_root_control.add_child(tex_rect)
 	
 	# 2. Loading Container placed near bottom in the dark lunar silhouette (Y ~ 83.5%)
 	var load_container = Control.new()
@@ -51,7 +61,7 @@ func _ready() -> void:
 	load_container.offset_right = BAR_WIDTH * 0.5
 	load_container.offset_top = 0.0
 	load_container.offset_bottom = 35.0
-	root_control.add_child(load_container)
+	_root_control.add_child(load_container)
 	
 	# 3. Custom drawn loading line
 	_loading_bar = Control.new()
@@ -80,20 +90,41 @@ func _ready() -> void:
 	_label.label_settings = label_settings
 	load_container.add_child(_label)
 	
-	# 5. Start smooth 2-second cinematic sequence
-	_start_animation_sequence(root_control)
+	# 5. Breathing glow pulse on the leading head
+	_pulse_tween = create_tween().set_loops()
+	_pulse_tween.tween_property(self, "_glow_pulse", 1.25, 0.35).set_trans(Tween.TRANS_SINE)
+	_pulse_tween.tween_property(self, "_glow_pulse", 0.90, 0.35).set_trans(Tween.TRANS_SINE)
+
+func set_loading_stage(progress_pct: float, stage_text: String = "INITIALIZING") -> void:
+	_target_progress = clampf(progress_pct, 0.0, 1.0)
+	if _label and not stage_text.is_empty():
+		_label.text = stage_text
+
+func finish_loading() -> void:
+	_target_progress = 1.0
+	_is_ready_to_finish = true
+	if _elapsed_time >= _min_display_time and not _is_finishing:
+		_execute_finish_sequence()
 
 func _process(delta: float) -> void:
+	_elapsed_time += delta
 	_sparkle_angle += delta * 3.5
 	
-	# Emit trailing sparks while moving
+	# Smoothly interpolate visible progress toward target stage
+	var lerp_speed = 6.0 if not _is_finishing else 12.0
+	_progress = move_toward(_progress, _target_progress, delta * lerp_speed * maxf(0.15, absf(_target_progress - _progress) + 0.3))
+	
+	# Check if ready to complete after minimum display time has passed
+	if _is_ready_to_finish and _elapsed_time >= _min_display_time and not _is_finishing:
+		_execute_finish_sequence()
+	
+	# Emit trailing sparks while progress is actively advancing
 	if _progress > 0.02 and _progress < 0.99:
 		_spark_spawn_timer += delta
 		if _spark_spawn_timer >= 0.045:
 			_spark_spawn_timer = 0.0
 			var h_center = Vector2(BAR_WIDTH * _progress, BAR_HEIGHT * 0.5)
-			# Random gentle velocity drifting backward and slightly up/down
-			var angle_rand = randf_range(PI * 0.75, PI * 1.25) # backward
+			var angle_rand = randf_range(PI * 0.75, PI * 1.25)
 			var speed = randf_range(12.0, 32.0)
 			_sparks.append({
 				"pos": h_center + Vector2(randf_range(-1.0, 1.0), randf_range(-2.0, 2.0)),
@@ -176,35 +207,25 @@ func _draw_diamond_star(center: Vector2, radius: float, inner_w: float, angle: f
 		pts.append(center + Vector2(cos(a_in), sin(a_in)) * inner_w)
 	_loading_bar.draw_colored_polygon(pts, col)
 
-func _start_animation_sequence(root_control: Control) -> void:
-	# Subtle breathing pulse on the glowing head
-	var pulse_tween = create_tween().set_loops()
-	pulse_tween.tween_property(self, "_glow_pulse", 1.25, 0.35).set_trans(Tween.TRANS_SINE)
-	pulse_tween.tween_property(self, "_glow_pulse", 0.90, 0.35).set_trans(Tween.TRANS_SINE)
+func _execute_finish_sequence() -> void:
+	if _is_finishing:
+		return
+	_is_finishing = true
 	
-	# Main 0% -> 100% progress animation (~1.65 seconds)
-	var main_tween = create_tween()
-	main_tween.tween_method(func(val: float):
-		_progress = val
-		if _loading_bar:
-			_loading_bar.queue_redraw()
-	, 0.0, 1.0, 1.65).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	
-	# At 1.65s: 100% reached -> dramatic starburst bloom flash
-	main_tween.tween_callback(func():
-		pulse_tween.kill()
-		_progress = 1.0
-		_glow_pulse = 2.4
-		if _loading_bar:
-			_loading_bar.queue_redraw()
-	)
-	main_tween.tween_property(self, "_glow_pulse", 1.0, 0.14).set_trans(Tween.TRANS_QUAD)
-	
-	# At ~1.77s: smoothly fade out the entire splash overlay over 0.35s
-	main_tween.tween_property(root_control, "modulate:a", 0.0, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	
-	# At ~2.12s: finish and cleanup
-	main_tween.tween_callback(func():
+	if _pulse_tween and _pulse_tween.is_valid():
+		_pulse_tween.kill()
+		
+	_progress = 1.0
+	_glow_pulse = 2.5
+	if _label:
+		_label.text = "READY"
+	if _loading_bar:
+		_loading_bar.queue_redraw()
+		
+	var fade_tween = create_tween()
+	fade_tween.tween_property(self, "_glow_pulse", 1.0, 0.12).set_trans(Tween.TRANS_QUAD)
+	fade_tween.tween_property(_root_control, "modulate:a", 0.0, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	fade_tween.tween_callback(func():
 		splash_finished.emit()
 		queue_free()
 	)
